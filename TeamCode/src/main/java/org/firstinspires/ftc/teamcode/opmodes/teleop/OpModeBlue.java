@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.settings.RobotSettings;
 import org.firstinspires.ftc.teamcode.subsystems.AprilTag;
 import org.firstinspires.ftc.teamcode.subsystems.JVBoysSoccerRobot;
 import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
-import org.firstinspires.ftc.teamcode.subsystems.outake;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 @Config
@@ -25,7 +25,7 @@ public class OpModeBlue extends LinearOpMode {
     private JVBoysSoccerRobot robot;
     private AprilTag aprilTag;
     private Spindexer spindexer;
-    private outake outake;
+    private Turret outake;
 
     /* ===== Gamepad State ===== */
     private final Gamepad currentGamepad1 = new Gamepad();
