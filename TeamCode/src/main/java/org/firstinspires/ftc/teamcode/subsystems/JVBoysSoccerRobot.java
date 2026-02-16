@@ -36,14 +36,14 @@ public class JVBoysSoccerRobot {
     public Drivetrain drivetrainSubsystem;
 
 
-    public AprilTag aprilTag;
+
     public Spindexer spindexer;
     public Intake intake;
    public Turret turret;
 
 
     // Hardware
-    public DcMotorEx motorFL, motorFR, motorBL, motorBR, motorSPINDEX, motorTURRET;
+    public DcMotorEx motorFL, motorFR, motorBL, motorBR, motorSPINDEX, motorTURRET, motor1, motor2;
 
 
     private int hertzCounter = 0;
@@ -60,12 +60,15 @@ public class JVBoysSoccerRobot {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
 
-        aprilTag = new AprilTag(hwMap, telemetry);
 
         initIMU();
         initHardware();
+
         drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
         intake = new Intake("intake", hwMap, telemetry);
+        spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
+        turret = new Turret(this);
+
 
 
 
@@ -78,7 +81,7 @@ public class JVBoysSoccerRobot {
         }
         telemetry.addData("INIT YAW: ", drivetrainSubsystem.initYaw);
 
-        subsystems = Arrays.asList(drivetrainSubsystem, aprilTag,  spindexer, intake, turret);
+        subsystems = Arrays.asList(drivetrainSubsystem,  spindexer, intake, turret);
         BR = new BulkReading(this);
 
     }
@@ -97,7 +100,7 @@ public class JVBoysSoccerRobot {
                 hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
             }
 
-            aprilTag = new AprilTag(hwMap, telemetry);
+
             spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
             intake = new Intake("intake", hwMap, telemetry);
 
@@ -105,7 +108,7 @@ public class JVBoysSoccerRobot {
             initHardware();
             drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
 
-            subsystems = Arrays.asList(drivetrainSubsystem, aprilTag, spindexer, intake, turret);
+            subsystems = Arrays.asList(drivetrainSubsystem, spindexer, intake, turret);
 
             RobotSettings.POSE_STORAGE = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
             telemetry.addData("PoseStorage: ", RobotSettings.POSE_STORAGE);
@@ -123,7 +126,7 @@ public class JVBoysSoccerRobot {
     public void initHardware() {
         initDrivetrainHardware();
         initShooterHardware();
-        initAprilTag();
+
     }
 
     public void initDrivetrainHardware() {
@@ -149,17 +152,22 @@ public class JVBoysSoccerRobot {
 
     }
 
+    public void initTurretHardware() {
+        motorTURRET = hwMap.get(DcMotorEx.class, "turret");
+        motor1 = hwMap.get(DcMotorEx.class, "spin1");
+        motor2 = hwMap.get(DcMotorEx.class, "spin2");
+        motorTURRET.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motorTURRET.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+    }
+
+
     public void initShooterHardware(){
         motorSPINDEX = hwMap.get(DcMotorEx.class, RobotSettings.SPIN_NAME);
-
-
         motorSPINDEX.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
     }
 
-    public void initAprilTag() {
-        aprilTag.init();
-    }
+
 
 
 

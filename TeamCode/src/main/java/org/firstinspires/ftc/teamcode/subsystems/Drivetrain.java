@@ -28,7 +28,7 @@ public class Drivetrain extends Subsystem {
     public static double MAX_SPEED = 1.0;
 
     public Drivetrain(HardwareMap hwMap, Telemetry telemetry, JVBoysSoccerRobot robot) {
-        this.hwMap = hwMap;
+        this.hwMap =  hwMap;
         this.telemetry = telemetry;
         this.robot = robot;
 

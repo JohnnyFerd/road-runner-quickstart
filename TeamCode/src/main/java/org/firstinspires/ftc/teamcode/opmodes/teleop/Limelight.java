@@ -42,7 +42,8 @@ public class Limelight extends LinearOpMode {
                 telemetry.addData("TX (Horizontal Offset)", result.getTx());
                 telemetry.addData("TY (Vertical Offset)", result.getTy());
                 telemetry.addData("TA (Target Area)", result.getTa());
-                telemetry.addData("pose", result.getBotpose());
+                telemetry.addData("bot pose", result.getBotpose());
+
 
             } else {
                 telemetry.addData("Target Visible", false);
