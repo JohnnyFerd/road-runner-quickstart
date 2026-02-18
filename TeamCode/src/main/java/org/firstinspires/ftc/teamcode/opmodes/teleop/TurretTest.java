@@ -19,7 +19,7 @@ public class TurretTest extends LinearOpMode {
     MecanumDrive rrDrive;
     Intake intake;
     Turret turret;
-    public static double targetangle = 0;
+
 
     @Override
     public void runOpMode() {
@@ -50,40 +50,22 @@ public class TurretTest extends LinearOpMode {
                     -gamepad1.left_stick_y,
                     gamepad1.right_stick_x
             );
-            Pose2d pose = rrDrive.localizer.getPose();
-
-            double goalX = 0;
-            double goalY = 0;
-
-            double dx = goalX - pose.position.x;
-            double dy = goalY - pose.position.y;
-
-            double angleToGoal = Math.toDegrees(Math.atan2(dy, dx));
-            double robotHeading = Math.toDegrees(pose.heading.toDouble());
-
-            double turretTarget = angleToGoal + robotHeading;
-
-// wrap
-            while (turretTarget > 180) turretTarget -= 360;
-            while (turretTarget < -180) turretTarget += 360;
-
-
 
 
 
             // RoadRunner ONLY updates pose
             rrDrive.updatePoseEstimate();
-
+            Pose2d pose = rrDrive.localizer.getPose();
             distance = pose.position.x;
-            CalcRPMs = 1000+ 14.3*distance;
+            CalcRPMs = 1300 + 14.3*distance;
 
 
             telemetry.addData("x", pose.position.x);
             telemetry.addData("y", pose.position.y);
             telemetry.addData("distance to goal", distance);
             telemetry.addData("Calculated rpms", CalcRPMs);
-            telemetry.addData("heading", Math.toDegrees(pose.heading.toDouble()));
-            telemetry.addData("target angle", targetangle);
+            telemetry.addData("heading", robot.getHeadingDeg());
+
 
             telemetry.update();
         }

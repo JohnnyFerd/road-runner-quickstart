@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -12,13 +14,17 @@ public class Turret extends Subsystem {
 
     private double startHeading;
 
+    // runtime debug values
+    private double robotHeading = 0;
+    private double targetAngle= 0;
+    private int targetTicks= 0;
+
     // gearing + encoder constants
-    public double gearRatio = 85.0 / 16.0;
-    public double ticksPerRev = 28 * gearRatio;
-    public double ticksPerDegree = ticksPerRev / 360.0;
+    public static double gearRatio = 85.0 / 16.0;
+    public static double ticksperdeg = 560.0/360;
 
     // tuning
-    public double power = 0.5;
+    public static double power = 0.5;
 
     public Turret(JVBoysSoccerRobot robot) {
         this.robot = robot;
@@ -40,20 +46,25 @@ public class Turret extends Subsystem {
     }
 
     @Override
-    public void addTelemetry(){}
+    public void addTelemetry(){
+
+
+    }
 
     @Override
     public void update() {
 
-        double robotHeading = robot.getHeadingDeg();
+        robotHeading = robot.getHeadingDeg();
 
         // turret tries to stay facing same global direction
-        double targetAngle = angleWrap((startHeading + 180) - robotHeading);
+        double delta = angleWrap(robot.getHeadingDeg() - startHeading);
+        int ticks = (int)(-delta * gearRatio*ticksperdeg); // temp scale
 
-        int targetTicks = (int)(targetAngle * ticksPerDegree);
+        motor.setTargetPosition(ticks);
+        motor.setPower(0.5);
 
-        motor.setTargetPosition(targetTicks);
-        motor.setPower(power);
+
+
     }
 
     @Override
