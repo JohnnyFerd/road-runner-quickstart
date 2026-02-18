@@ -1,79 +1,63 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-
+@Config
 public class Turret extends Subsystem {
 
     private JVBoysSoccerRobot robot;
-    private DcMotorEx RotateMotor, motor1, motor2;
-    private Telemetry telemetry;
+    private DcMotorEx motor;
 
-    public double gearRatio = 85.0 / 16.0;   // change later if needed
-    public double motorTPR = 1700;           // RotateMotor TPR
-    public double maxAngle = 170;            // wire protection
-    public double wheelTPR = 28;             // REV HD Hex motor TPR
+    private double startHeading;
 
-    private double targetAngle = 0;
-    private double targetRPM = 0;
+    // gearing + encoder constants
+    public double gearRatio = 85.0 / 16.0;
+    public double ticksPerRev = 28 * gearRatio;
+    public double ticksPerDegree = ticksPerRev / 360.0;
+
+    // tuning
+    public double power = 0.5;
 
     public Turret(JVBoysSoccerRobot robot) {
         this.robot = robot;
-        this.RotateMotor = robot.motorTURRET;
-        this.motor1 = robot.motor1;
-        this.motor2 = robot.motor2;
+
+        motor = robot.hwMap.get(DcMotorEx.class, "turretspinner");
+
+        motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor.setTargetPosition(0);
+        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        startHeading = robot.getHeadingDeg();
     }
 
-    public void setTargetAngle(double angle) {
-        angle = Math.max(-maxAngle, Math.min(maxAngle, angle));
-        targetAngle = angle;
+    private double angleWrap(double angle){
+        while(angle > 180) angle -= 360;
+        while(angle < -180) angle += 360;
+        return angle;
     }
 
-    public void setTargetRPM(double rpm) {
-        targetRPM = rpm;
-    }
-
-    public double getCurrentAngle() {
-        double ticks = RotateMotor.getCurrentPosition();
-        double ticksPerRev = motorTPR * gearRatio;
-        return (ticks / ticksPerRev) * 360.0;
-    }
-
-    private double rpmToTicksPerSecond(double rpm) {
-        return rpm * wheelTPR / 60.0;
-    }
+    @Override
+    public void addTelemetry(){}
 
     @Override
     public void update() {
-        // Turret control
-        double current = getCurrentAngle();
-        double error = targetAngle - current;
 
-        while (error > 180) error -= 360;
-        while (error < -180) error += 360;
+        double robotHeading = robot.getHeadingDeg();
 
-        double power = error * 0.01;   // simple P controller
-        power = Math.max(-0.5, Math.min(0.5, power));
-        RotateMotor.setPower(power);
+        // turret tries to stay facing same global direction
+        double targetAngle = angleWrap((startHeading + 180) - robotHeading);
 
-        // Spin motor1 and motor2 at target RPM
-        double velocity = rpmToTicksPerSecond(targetRPM);
-        motor1.setVelocity(velocity);
-        motor2.setVelocity(velocity);
+        int targetTicks = (int)(targetAngle * ticksPerDegree);
+
+        motor.setTargetPosition(targetTicks);
+        motor.setPower(power);
     }
 
     @Override
-    public void stop() {
-        RotateMotor.setPower(0);
-        motor1.setPower(0);
-        motor2.setPower(0);
-    }
-
-    @Override
-    public void addTelemetry() {
-        robot.telemetry.addData("Turret Angle", getCurrentAngle());
-        robot.telemetry.addData("Turret Target", targetAngle);
-        robot.telemetry.addData("Motor RPM", targetRPM);
+    public void stop(){
+        motor.setPower(0);
     }
 }

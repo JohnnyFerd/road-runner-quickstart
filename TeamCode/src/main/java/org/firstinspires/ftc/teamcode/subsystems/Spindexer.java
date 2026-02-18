@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -14,13 +15,12 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 public class Spindexer extends Subsystem {
 
     /* ===== Hardware ===== */
-    private final DcMotorEx motor;
+    private final Servo motor;
     private final ColorSensor colorSensor;
     private final Telemetry telemetry;
 
     /* ===== Motor Tunables ===== */
-    public static double SPIN_POWER = 0.6;   // higher to overcome friction
-    public static int TICKS_PER_REV = 1700;
+
 
     /* ===== HSV Tunables ===== */
     public static double GREEN_H_MIN = 133;
@@ -30,7 +30,7 @@ public class Spindexer extends Subsystem {
 
     /* ===== State ===== */
     private Mode mode = Mode.IDLE;
-    private int targetPosition = 0;
+    private double targetPosition = 0;
 
     private final float[] hsv = new float[3];
 
@@ -46,12 +46,8 @@ public class Spindexer extends Subsystem {
 
     public Spindexer(String motorName, String colorSensorName, HardwareMap hwMap, Telemetry telemetry) {
         this.telemetry = telemetry;
-        motor = hwMap.get(DcMotorEx.class, motorName);
+        motor = hwMap.get(Servo.class, motorName);
         colorSensor = hwMap.get(ColorSensor.class, colorSensorName);
-
-        motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     /* ===== Intake / Record ===== */
@@ -90,24 +86,19 @@ public class Spindexer extends Subsystem {
     public void rotateByFraction(double fraction) {
         if (fraction == 0) return;
 
-        int ticks = (int)(TICKS_PER_REV * fraction);
-        targetPosition = motor.getCurrentPosition() + ticks;
+        double ticks = (1 * fraction);
+        targetPosition = motor.getPosition() + ticks;
 
-        motor.setTargetPosition(targetPosition);
-        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        motor.setPower(SPIN_POWER);
+        motor.setPosition(targetPosition);
         mode = Mode.TO_ENCODER;
 
         telemetry.addData("Rotate Fraction", fraction);
         telemetry.addData("Target Pos", targetPosition);
-        telemetry.addData("Current Pos", motor.getCurrentPosition());
-        telemetry.addData("SPIN POWER", SPIN_POWER);
+        telemetry.addData("Current Pos", motor.getPosition());
         telemetry.update();
     }
 
     public void stop() {
-        motor.setPower(0);
-        motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         mode = Mode.IDLE;
     }
 
@@ -130,7 +121,7 @@ public class Spindexer extends Subsystem {
     /* ===== Update Loop ===== */
     @Override
     public void update() {
-        if (mode == Mode.TO_ENCODER && !motor.isBusy()) stop();
+        if (mode == Mode.TO_ENCODER) stop();
     }
 
     public boolean isIdle() { return mode == Mode.IDLE; }
@@ -142,7 +133,7 @@ public class Spindexer extends Subsystem {
         telemetry.addData("Ball 0", ballCount>0 ? balls[0] : "EMPTY");
         telemetry.addData("Ball 1", ballCount>1 ? balls[1] : "EMPTY");
         telemetry.addData("Ball 2", ballCount>2 ? balls[2] : "EMPTY");
-        telemetry.addData("Motor Pos", motor.getCurrentPosition());
+        telemetry.addData("Motor Pos", motor.getPosition());
         telemetry.addData("Mode", mode);
     }
 }

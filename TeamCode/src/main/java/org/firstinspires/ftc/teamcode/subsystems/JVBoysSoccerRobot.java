@@ -37,7 +37,7 @@ public class JVBoysSoccerRobot {
 
 
 
-    public Spindexer spindexer;
+
     public Intake intake;
    public Turret turret;
 
@@ -66,7 +66,7 @@ public class JVBoysSoccerRobot {
 
         drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
         intake = new Intake("intake", hwMap, telemetry);
-        spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
+        //spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
         turret = new Turret(this);
 
 
@@ -81,7 +81,7 @@ public class JVBoysSoccerRobot {
         }
         telemetry.addData("INIT YAW: ", drivetrainSubsystem.initYaw);
 
-        subsystems = Arrays.asList(drivetrainSubsystem,  spindexer, intake, turret);
+        subsystems = Arrays.asList(drivetrainSubsystem, intake, turret);
         BR = new BulkReading(this);
 
     }
@@ -101,14 +101,14 @@ public class JVBoysSoccerRobot {
             }
 
 
-            spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
+            //spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
             intake = new Intake("intake", hwMap, telemetry);
 
             initIMU();
             initHardware();
             drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
 
-            subsystems = Arrays.asList(drivetrainSubsystem, spindexer, intake, turret);
+            subsystems = Arrays.asList(drivetrainSubsystem, intake, turret);
 
             RobotSettings.POSE_STORAGE = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
             telemetry.addData("PoseStorage: ", RobotSettings.POSE_STORAGE);
@@ -126,6 +126,7 @@ public class JVBoysSoccerRobot {
     public void initHardware() {
         initDrivetrainHardware();
         initShooterHardware();
+        initTurretHardware();
 
     }
 
@@ -153,18 +154,17 @@ public class JVBoysSoccerRobot {
     }
 
     public void initTurretHardware() {
-        motorTURRET = hwMap.get(DcMotorEx.class, "turret");
-        motor1 = hwMap.get(DcMotorEx.class, "spin1");
-        motor2 = hwMap.get(DcMotorEx.class, "spin2");
-        motorTURRET.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motorTURRET = hwMap.get(DcMotorEx.class, "turretspinner");
+
         motorTURRET.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
 
     }
 
 
     public void initShooterHardware(){
-        motorSPINDEX = hwMap.get(DcMotorEx.class, RobotSettings.SPIN_NAME);
-        motorSPINDEX.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    //motor1 = hwMap.get(DcMotorEx.class, "spin1");
+        //motor2 = hwMap.get(DcMotorEx.class, "spin2");
     }
 
 
@@ -179,6 +179,14 @@ public class JVBoysSoccerRobot {
             }
         }
     }
+    public double getHeadingDeg() {
+        return imu.getRobotOrientation(
+                AxesReference.INTRINSIC,
+                AxesOrder.ZYX,
+                AngleUnit.DEGREES
+        ).firstAngle;
+    }
+
     public void update(boolean updateSubsystems, boolean useTelemetry) {
         if (updateSubsystems) {
             for (Subsystem s : subsystems) {
