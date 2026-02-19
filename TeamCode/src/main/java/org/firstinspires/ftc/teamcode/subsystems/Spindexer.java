@@ -5,7 +5,9 @@ import android.graphics.Color;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -21,7 +23,7 @@ public class Spindexer extends Subsystem {
 
     /* ===== Motion Tunables ===== */
     public static double POWER = 0.5;
-    public static double TICKS_PER_REV =  1200; // change to your encoder
+    public static double TICKS_PER_REV =  8192; // change to your encoder
 
     /* ===== HSV Tunables ===== */
     public static double GREEN_H_MIN = 133;
@@ -52,6 +54,8 @@ public class Spindexer extends Subsystem {
         servo = hwMap.get(CRServo.class, servoName);
         encoderMotor = hwMap.get(DcMotorEx.class, encoderName);
         colorSensor = hwMap.get(ColorSensor.class, colorSensorName);
+        encoderMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        servo.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     /* ===== Intake Record ===== */
@@ -122,21 +126,30 @@ public void setModeMoving(){ mode = Mode.MOVING;}
         return hsv[0] > PURPLE_H_MIN && hsv[0] < PURPLE_H_MAX;
     }
 
-    /* ===== Update Loop ===== */
+    public static double kP = 0.0008;   // tune this
+    public static double MAX_POWER = 0.6;
+    public static double MIN_POWER = 0.08;  // prevents stall
+
     @Override
     public void update() {
 
         if (mode == Mode.MOVING) {
 
-            int current = -1*encoderMotor.getCurrentPosition();
+            int current = encoderMotor.getCurrentPosition();
             int error = targetTicks - current;
 
-            if (Math.abs(error) < 10) {
+            if (Math.abs(error) < 30) {   // tighter threshold
                 stop();
                 return;
             }
 
-            double power = Math.signum(error) * POWER;
+            double power = kP * error;
+
+            power = Math.max(-MAX_POWER, Math.min(MAX_POWER, power));
+
+            if (Math.abs(power) < MIN_POWER)
+                power = Math.signum(power) * MIN_POWER;
+
             servo.setPower(power);
         }
     }

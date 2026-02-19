@@ -30,7 +30,7 @@ public class TongueServoTester extends LinearOpMode {
         while (opModeIsActive()) {
 
             tongue1.setPosition(angle);
-            tongue2.setPosition();
+            tongue2.setPosition(1-angle);
 
             telemetry.update();
         }
