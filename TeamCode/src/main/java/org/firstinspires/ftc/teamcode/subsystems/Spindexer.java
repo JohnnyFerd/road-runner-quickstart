@@ -4,10 +4,9 @@ import android.graphics.Color;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -15,12 +14,14 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 public class Spindexer extends Subsystem {
 
     /* ===== Hardware ===== */
-    private final Servo motor;
+    private final CRServo servo;
+    private final DcMotorEx encoderMotor;
     private final ColorSensor colorSensor;
     private final Telemetry telemetry;
 
-    /* ===== Motor Tunables ===== */
-
+    /* ===== Motion Tunables ===== */
+    public static double POWER = 0.5;
+    public static double TICKS_PER_REV =  1200; // change to your encoder
 
     /* ===== HSV Tunables ===== */
     public static double GREEN_H_MIN = 133;
@@ -30,27 +31,30 @@ public class Spindexer extends Subsystem {
 
     /* ===== State ===== */
     private Mode mode = Mode.IDLE;
-    private double targetPosition = 0;
+    public static int targetTicks = 0;
 
     private final float[] hsv = new float[3];
 
-    /* ===== Ball Storage (FIFO) ===== */
+    /* ===== Ball Storage ===== */
     public enum BallColor { GREEN, PURPLE }
     private final BallColor[] balls = new BallColor[3];
     private int ballCount = 0;
 
     public enum Mode {
         IDLE,
-        TO_ENCODER
+        MOVING
     }
 
-    public Spindexer(String motorName, String colorSensorName, HardwareMap hwMap, Telemetry telemetry) {
+    public Spindexer(String servoName, String encoderName, String colorSensorName,
+                     HardwareMap hwMap, Telemetry telemetry) {
+
         this.telemetry = telemetry;
-        motor = hwMap.get(Servo.class, motorName);
+        servo = hwMap.get(CRServo.class, servoName);
+        encoderMotor = hwMap.get(DcMotorEx.class, encoderName);
         colorSensor = hwMap.get(ColorSensor.class, colorSensorName);
     }
 
-    /* ===== Intake / Record ===== */
+    /* ===== Intake Record ===== */
     public void recordBall() {
         if (ballCount >= 3) return;
         updateHSV();
@@ -58,73 +62,88 @@ public class Spindexer extends Subsystem {
         else if (seesPurple()) balls[ballCount++] = BallColor.PURPLE;
     }
 
-    /* ===== Rotate / Index ===== */
-    // ================= Ball Shooting & Cataloguing =================
-
-    // Shoot first ball (CW rotation), remove from queue if it exists
+public void setModeMoving(){ mode = Mode.MOVING;}
+    /* ===== Shoot Logic ===== */
     public void shoot() {
-        rotateByFraction(-1.0 / 3.0); // CW
+        rotateByFraction(-1.0/3.0);
         if (ballCount > 0) shiftLeft();
     }
 
-    // Shoot green only if first ball is green
     public void shootGreen() {
         if (ballCount > 0 && balls[0] == BallColor.GREEN) shoot();
     }
 
-    // Shoot purple only if first ball is purple
     public void shootPurple() {
         if (ballCount > 0 && balls[0] == BallColor.PURPLE) shoot();
     }
 
-    // Catalogue a ball (rotate CCW), do NOT record anything — color is already stored at intake
     public void catalogue() {
-        rotateByFraction(1.0 / 3.0); // CCW rotation
+        rotateByFraction(1.0/3.0);
     }
 
-    /* ===== Encoder Motion ===== */
+    /* ===== Rotation Control ===== */
     public void rotateByFraction(double fraction) {
         if (fraction == 0) return;
 
-        double ticks = (1 * fraction);
-        targetPosition = motor.getPosition() + ticks;
+        int delta = (int)(fraction * TICKS_PER_REV);
+        targetTicks = encoderMotor.getCurrentPosition() + delta;
 
-        motor.setPosition(targetPosition);
-        mode = Mode.TO_ENCODER;
+        mode = Mode.MOVING;
 
         telemetry.addData("Rotate Fraction", fraction);
-        telemetry.addData("Target Pos", targetPosition);
-        telemetry.addData("Current Pos", motor.getPosition());
+        telemetry.addData("Target", targetTicks);
         telemetry.update();
     }
 
     public void stop() {
+        servo.setPower(0);
         mode = Mode.IDLE;
     }
 
     private void shiftLeft() {
-        for (int i = 0; i < ballCount - 1; i++) balls[i] = balls[i+1];
+        for (int i = 0; i < ballCount - 1; i++)
+            balls[i] = balls[i+1];
         balls[--ballCount] = null;
     }
 
     /* ===== Color Detection ===== */
     private void updateHSV() {
-        int r = Math.min(colorSensor.red(), 255);
-        int g = Math.min(colorSensor.green(), 255);
-        int b = Math.min(colorSensor.blue(), 255);
-        Color.RGBToHSV(r, g, b, hsv);
+        int r = Math.min(colorSensor.red(),255);
+        int g = Math.min(colorSensor.green(),255);
+        int b = Math.min(colorSensor.blue(),255);
+        Color.RGBToHSV(r,g,b,hsv);
     }
 
-    private boolean seesGreen() { return hsv[0] > GREEN_H_MIN && hsv[0] < GREEN_H_MAX; }
-    private boolean seesPurple() { return hsv[0] > PURPLE_H_MIN && hsv[0] < PURPLE_H_MAX; }
+    private boolean seesGreen() {
+        return hsv[0] > GREEN_H_MIN && hsv[0] < GREEN_H_MAX;
+    }
+
+    private boolean seesPurple() {
+        return hsv[0] > PURPLE_H_MIN && hsv[0] < PURPLE_H_MAX;
+    }
 
     /* ===== Update Loop ===== */
     @Override
     public void update() {
-        if (mode == Mode.TO_ENCODER) stop();
+
+        if (mode == Mode.MOVING) {
+
+            int current = -1*encoderMotor.getCurrentPosition();
+            int error = targetTicks - current;
+
+            if (Math.abs(error) < 10) {
+                stop();
+                return;
+            }
+
+            double power = Math.signum(error) * POWER;
+            servo.setPower(power);
+        }
     }
 
-    public boolean isIdle() { return mode == Mode.IDLE; }
+    public boolean isIdle() {
+        return mode == Mode.IDLE;
+    }
 
     /* ===== Telemetry ===== */
     @Override
@@ -133,7 +152,8 @@ public class Spindexer extends Subsystem {
         telemetry.addData("Ball 0", ballCount>0 ? balls[0] : "EMPTY");
         telemetry.addData("Ball 1", ballCount>1 ? balls[1] : "EMPTY");
         telemetry.addData("Ball 2", ballCount>2 ? balls[2] : "EMPTY");
-        telemetry.addData("Motor Pos", motor.getPosition());
+        telemetry.addData("Encoder", encoderMotor.getCurrentPosition());
+        telemetry.addData("Target", targetTicks);
         telemetry.addData("Mode", mode);
     }
 }

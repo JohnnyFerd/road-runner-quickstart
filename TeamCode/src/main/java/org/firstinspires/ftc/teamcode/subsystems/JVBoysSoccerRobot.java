@@ -37,6 +37,7 @@ public class JVBoysSoccerRobot {
 
 
 
+    public Spindexer spindexer;
 
     public Intake intake;
    public Turret turret;
@@ -68,6 +69,14 @@ public class JVBoysSoccerRobot {
         intake = new Intake("intake", hwMap, telemetry);
         //spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
         turret = new Turret(this);
+        spindexer = new Spindexer(
+                "spindexerServo",
+                "BL",
+                "colorsensor",
+                hwMap,
+                telemetry
+        );
+
 
 
 
@@ -81,7 +90,7 @@ public class JVBoysSoccerRobot {
         }
         telemetry.addData("INIT YAW: ", drivetrainSubsystem.initYaw);
 
-        subsystems = Arrays.asList(drivetrainSubsystem, intake, turret);
+        subsystems = Arrays.asList(drivetrainSubsystem, intake, turret, spindexer);
         BR = new BulkReading(this);
 
     }
@@ -108,7 +117,7 @@ public class JVBoysSoccerRobot {
             initHardware();
             drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
 
-            subsystems = Arrays.asList(drivetrainSubsystem, intake, turret);
+            subsystems = Arrays.asList(drivetrainSubsystem, intake, turret, spindexer);
 
             RobotSettings.POSE_STORAGE = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
             telemetry.addData("PoseStorage: ", RobotSettings.POSE_STORAGE);

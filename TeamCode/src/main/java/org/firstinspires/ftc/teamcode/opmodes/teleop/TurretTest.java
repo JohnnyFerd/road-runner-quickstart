@@ -10,6 +10,7 @@ import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.JVBoysSoccerRobot;
+import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 @Config
 @TeleOp(name="Drive + RR, TurretTest")
@@ -19,7 +20,7 @@ public class TurretTest extends LinearOpMode {
     MecanumDrive rrDrive;
     Intake intake;
     Turret turret;
-
+Spindexer spindexer;
 
     @Override
     public void runOpMode() {
@@ -28,6 +29,8 @@ public class TurretTest extends LinearOpMode {
         drivetrain = new Drivetrain(hardwareMap, telemetry, robot);
         intake=robot.intake;
         turret=robot.turret;
+        spindexer=robot.spindexer;
+
         double CalcRPMs, distance;
         rrDrive = new MecanumDrive(
                 hardwareMap,
@@ -38,6 +41,8 @@ public class TurretTest extends LinearOpMode {
 
         while(opModeIsActive()){
             robot.update(true, true);
+
+
             if(gamepad1.a){
                 intake.intakeOn();
             }
