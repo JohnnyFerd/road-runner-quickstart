@@ -112,7 +112,14 @@ public class JVBoysSoccerRobot {
 
             //spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
             intake = new Intake("intake", hwMap, telemetry);
-
+            turret = new Turret(this);
+            spindexer = new Spindexer(
+                    "spindexerServo",
+                    "BL",
+                    "colorsensor",
+                    hwMap,
+                    telemetry
+            );
             initIMU();
             initHardware();
             drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);

@@ -42,17 +42,16 @@ Spindexer spindexer;
         while(opModeIsActive()){
             robot.update(true, true);
 
-            if (gamepad1.y && spindexer.isIdle()) {
+            if (gamepad1.a && spindexer.isIdle()) {
                 spindexer.rotateByFraction(1.0 / 3.0);
+            }
 
-
-          
 
             if(gamepad1.a){
-                intake.intakeOn();
+                    intake.intakeOn();
             }
             if(gamepad1.b){
-                intake.intakeOff();
+                    intake.intakeOff();
             }
             // your drivetrain still drives
             drivetrain.moveXYR(
@@ -81,3 +80,4 @@ Spindexer spindexer;
         }
     }
 }
+
