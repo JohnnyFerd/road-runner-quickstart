@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -8,7 +10,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
-public class Limelight extends Subsystem {
+import java.util.List;
+
+@Config
+public class LimelightSub extends Subsystem {
 
     private Limelight3A limelight;
     private Telemetry telemetry;
@@ -16,10 +21,8 @@ public class Limelight extends Subsystem {
 
     private LLResult latestResult;
 
-    // === Configurable ===
     public static int PIPELINE = 0;
 
-    // === Output Values ===
     public boolean targetVisible = false;
     public double tx = 0;
     public double ty = 0;
@@ -29,7 +32,7 @@ public class Limelight extends Subsystem {
     public String patternLabel = "None";
     public String goalLabel = "None";
 
-    public Limelight(HardwareMap hwMap, Telemetry telemetry) {
+    public LimelightSub(HardwareMap hwMap, Telemetry telemetry) {
         this.hwMap = hwMap;
         this.telemetry = telemetry;
     }
@@ -41,7 +44,6 @@ public class Limelight extends Subsystem {
         limelight.start();
 
         FtcDashboard.getInstance().startCameraStream(limelight, 30);
-
         telemetry.addLine("Limelight initialized");
     }
 
@@ -60,30 +62,39 @@ public class Limelight extends Subsystem {
         goalLabel = "None";
 
         if (latestResult != null && latestResult.isValid()) {
-            targetVisible = true;
+
             tx = latestResult.getTx();
             ty = latestResult.getTy();
             ta = latestResult.getTa();
             botpose = latestResult.getBotpose();
 
-            int id = latestResult;
+            List<LLResultTypes.FiducialResult> tags = latestResult.getFiducialResults();
 
-            switch (id) {
-                case 20:
-                    goalLabel = "bluegoal";
-                    break;
-                case 21:
-                    patternLabel = "GPP";
-                    break;
-                case 22:
-                    patternLabel = "PGP";
-                    break;
-                case 23:
-                    patternLabel = "PPG";
-                    break;
-                case 24:
-                    goalLabel = "redgoal";
-                    break;
+            if (tags != null ) {
+                targetVisible = true;
+
+                for (LLResultTypes.FiducialResult tag : tags) {
+
+                    int id = tag.getFiducialId();
+
+                    switch (id) {
+                        case 20:
+                            goalLabel = "bluegoal";
+                            break;
+                        case 21:
+                            patternLabel = "GPP";
+                            break;
+                        case 22:
+                            patternLabel = "PGP";
+                            break;
+                        case 23:
+                            patternLabel = "PPG";
+                            break;
+                        case 24:
+                            goalLabel = "redgoal";
+                            break;
+                    }
+                }
             }
         }
     }
@@ -100,8 +111,7 @@ public class Limelight extends Subsystem {
             telemetry.addData("Pattern Label", patternLabel);
 
             if (botpose != null) {
-                telemetry.addData("BotPose X", botpose);
-
+                telemetry.addData("BotPose", botpose.toString());
             }
         } else {
             telemetry.addLine("No target detected");
@@ -114,15 +124,11 @@ public class Limelight extends Subsystem {
 
     public void setPipeline(int pipeline) {
         PIPELINE = pipeline;
-        if (limelight != null) {
-            limelight.pipelineSwitch(pipeline);
-        }
+        if (limelight != null) limelight.pipelineSwitch(pipeline);
     }
 
     public void stop() {
-        if (limelight != null) {
-            limelight.stop();
-        }
+        if (limelight != null) limelight.stop();
     }
 
     public Limelight3A getCamera() {
