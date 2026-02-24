@@ -37,6 +37,8 @@ public class Intake extends Subsystem {
 
     public void intakeOn() {
         mode = Mode.ON;
+
+
     }
 
     public void intakeReverse() {

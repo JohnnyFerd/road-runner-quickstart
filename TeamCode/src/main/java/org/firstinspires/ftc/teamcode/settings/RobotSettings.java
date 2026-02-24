@@ -21,6 +21,7 @@ public class RobotSettings {
     public static final String FR_NAME = "FR";
     public static final String BL_NAME = "BL";
     public static final String BR_NAME = "BR";
+
     public static final String SPIN_NAME = "spindexer";
 //br-0, bl-1, fr-2, fl-3
     public static final boolean FL_REVERSED = true;

@@ -28,6 +28,7 @@ public class March1stOpmode extends LinearOpMode {
     Turret turret;
     Spindexer spindexer;
     JVBoysSoccerRobot robot;
+    Tongue Tongue;
 
     /* ---------------- VISION ---------------- */
 
@@ -45,6 +46,7 @@ public class March1stOpmode extends LinearOpMode {
     /* ---------------- STATE ---------------- */
 
     boolean intakeOn = false;
+    boolean tongueUp = false;
 
     /* ============================================================ */
 
@@ -59,12 +61,11 @@ public class March1stOpmode extends LinearOpMode {
         intake = robot.intake;
         turret = robot.turret;
         spindexer = robot.spindexer;
+        Tongue = robot.Tongue;
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
         limelight.start();
-
-        FtcDashboard.getInstance().startCameraStream(limelight, 30);
 
         rrDrive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
 
@@ -77,14 +78,14 @@ public class March1stOpmode extends LinearOpMode {
 
             updateGamepads();
 
-            robot.update(true,true);
+
 
             handleDrive();
             handleIntake();
             handleSpindexer();
             updatePose();
             updateVision();
-
+            robot.update(true,true);
             sendTelemetry();
         }
     }
@@ -118,15 +119,28 @@ public class March1stOpmode extends LinearOpMode {
             if(intakeOn) intake.intakeOn();
             else intake.intakeOff();
         }
+        if(curr1.b && !prev1.b){
+            tongueUp = !tongueUp;
+
+            if(tongueUp) Tongue.setUp();
+            else Tongue.setDown();
+        }
+        if(curr1.dpad_up && !prev1.dpad_up){
+            robot.outake.setPresetVelocity(Outake.FarShotVelo);
+            robot.outake.intakeOn();
+        }
+
     }
 
     private void handleSpindexer() {
 
-        if(curr1.a && !prev1.a && spindexer.isIdle())
+        if(curr1.dpad_right && !prev1.dpad_right && spindexer.isIdle()){
             spindexer.rotateByFraction(1.0/3.0);
+        }
+        if(curr1.dpad_left && !prev1.dpad_left && spindexer.isIdle()){
+            spindexer.rotateByFraction(-1.0/3.0);
+        }
 
-        if(curr2.a && !prev2.a)
-            spindexer.shoot();
     }
 
     /* ============================================================

@@ -136,9 +136,9 @@ public class Drivetrain extends Subsystem {
         if (prevPowerFL != powerFL) {
             robot.motorFL.setPower(powerFL);
         }
-        if (prevPowerFR != powerFR) {
-            robot.motorFR.setPower(powerFR);
-        }
+
+        robot.motorFR.setPower(powerFR);
+
         prevPowerBR = powerBR;
         prevPowerBL = powerBL;
         prevPowerFL = powerFL;

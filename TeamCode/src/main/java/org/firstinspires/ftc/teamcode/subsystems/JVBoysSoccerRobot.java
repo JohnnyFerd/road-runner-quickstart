@@ -34,6 +34,7 @@ public class JVBoysSoccerRobot {
 
     // Subsystems
     public Drivetrain drivetrainSubsystem;
+    public Outake outake;
 
 
 
@@ -42,6 +43,7 @@ public class JVBoysSoccerRobot {
     public Intake intake;
    public Turret turret;
    public LimelightSub limelight;
+   public Tongue Tongue;
 
 
     // Hardware
@@ -69,15 +71,16 @@ public class JVBoysSoccerRobot {
         drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
         intake = new Intake("intake", hwMap, telemetry);
         //spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
-        turret = new Turret(this);
+        turret = new Turret(this, telemetry);
+        outake = new Outake(hwMap, telemetry);
         spindexer = new Spindexer(
-                "spindexerServo",
-                "BL",
+                "spindexerServo",motorBL,
                 "colorsensor",
                 hwMap,
                 telemetry
         );
         limelight = new LimelightSub(hwMap, telemetry);
+        Tongue = new Tongue("Tongue1", "Tongue2", hwMap, telemetry);
 
 
 
@@ -92,7 +95,7 @@ public class JVBoysSoccerRobot {
         }
         telemetry.addData("INIT YAW: ", drivetrainSubsystem.initYaw);
 
-        subsystems = Arrays.asList(drivetrainSubsystem, intake, turret, spindexer );
+        subsystems = Arrays.asList(drivetrainSubsystem, intake, turret, spindexer, Tongue, outake );
         BR = new BulkReading(this);
 
     }
@@ -115,10 +118,11 @@ public class JVBoysSoccerRobot {
             //spindexer = new Spindexer("spindexer", "colorsensor", hwMap, telemetry);
             intake = new Intake("intake", hwMap, telemetry);
             limelight = new LimelightSub(hwMap, telemetry);
-            turret = new Turret(this);
+            outake = new Outake(hwMap, telemetry);
+            turret = new Turret(this, telemetry);
             spindexer = new Spindexer(
                     "spindexerServo",
-                    "BL",
+                    motorBL,
                     "colorsensor",
                     hwMap,
                     telemetry
@@ -126,8 +130,9 @@ public class JVBoysSoccerRobot {
             initIMU();
             initHardware();
             drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
+            Tongue = new Tongue("Tongue1", "Tongue2", hwMap, telemetry);
 
-            subsystems = Arrays.asList(drivetrainSubsystem, intake, turret, spindexer );
+            subsystems = Arrays.asList(drivetrainSubsystem, intake, turret, spindexer, Tongue, outake);
 
             RobotSettings.POSE_STORAGE = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
             telemetry.addData("PoseStorage: ", RobotSettings.POSE_STORAGE);
@@ -151,7 +156,7 @@ public class JVBoysSoccerRobot {
 
     public void initDrivetrainHardware() {
         motorFL = hwMap.get(DcMotorEx.class, RobotSettings.FL_NAME);
-        motorBL = hwMap.get(DcMotorEx.class, RobotSettings.BL_NAME);
+        motorBL = hwMap.get(DcMotorEx.class, "BL");
         motorFR = hwMap.get(DcMotorEx.class, RobotSettings.FR_NAME);
         motorBR = hwMap.get(DcMotorEx.class, RobotSettings.BR_NAME);
 
@@ -168,7 +173,7 @@ public class JVBoysSoccerRobot {
         motorFL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorBL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorFR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorBR.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motorBR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
     }
 

@@ -14,8 +14,8 @@ public class Tongue extends Subsystem {
     private final Telemetry telemetry;
 
     /* ===== Tunables ===== */
-    public static double DOWN_POSITION = 0.02;
-    public static double UP_POSITION = 0.255;
+    public static double DOWN_POSITION = 0.03;
+    public static double UP_POSITION = 0.34;
 
     /* ===== State ===== */
     private Mode mode = Mode.DOWN;
@@ -39,18 +39,20 @@ public class Tongue extends Subsystem {
     /* ===== Commands ===== */
 
     // Toggle between up and down
-    public void toggle() {
-        mode = (mode == Mode.DOWN) ? Mode.UP : Mode.DOWN;
-    }
+
 
     // Force tongue up
     public void setUp() {
         mode = Mode.UP;
+        tongue1.setPosition(UP_POSITION);
+        tongue2.setPosition(1 - UP_POSITION);
     }
 
     // Force tongue down
     public void setDown() {
         mode = Mode.DOWN;
+
+
     }
 
     /* ===== Update Loop ===== */
