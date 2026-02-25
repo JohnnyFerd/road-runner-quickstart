@@ -27,6 +27,7 @@ public class Turret extends Subsystem {
     public static double gearRatio = 85.0 / 16.0;
     public static double ticksperdeg = 560.0/360;
     public static double MAX_TURRET_DEG = 60.0;
+    private boolean aimAtGoal = false;
 
     // tuning
 
@@ -46,26 +47,25 @@ public class Turret extends Subsystem {
         startHeading = robot.getHeadingDeg();
     }
 
-    private double angleWrap(double angle){
-        while(angle > 180) angle -= 360;
-        while(angle < -180) angle += 360;
-        return angle;
-    }
+
 
     @Override
     public void addTelemetry(){
 
 
     }
+    public void setAim(boolean aim) {
+        this.aimAtGoal = aim;
+    }
 
 
     @Override
     public void update() {
-
+    if(aimAtGoal){
         robotHeading = robot.getHeadingDeg();
 
         // how much robot rotated since start
-        double delta = angleWrap(robotHeading - startHeading);
+        double delta = robotHeading - startHeading;
 
         // CLAMP turret allowed rotation to ±60°
         double clampedDelta = Math.max(-MAX_TURRET_DEG,
@@ -93,6 +93,7 @@ public class Turret extends Subsystem {
         telemetry.addData("Clamped Delta", clampedDelta);
         telemetry.addData("Target Ticks", targetTicks);
         telemetry.addData("Out Of Range", Math.abs(delta) > MAX_TURRET_DEG);
+      }
     }
 
     @Override

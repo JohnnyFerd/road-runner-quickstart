@@ -85,7 +85,9 @@ public class March1stOpmode extends LinearOpMode {
             handleSpindexer();
             updatePose();
             updateVision();
+            turret.setAim(curr1.x);  // only aim if 'a' is pressed
             robot.update(true,true);
+            turret.setAim(curr1.x);  // only aim if 'a' is pressed
             sendTelemetry();
         }
     }
