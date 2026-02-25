@@ -160,7 +160,8 @@ public class March1stOpmode extends LinearOpMode {
         distance = Math.abs(pose.position.x);
         distance = Math.max(0, Math.min(distance, 200));
 
-        CalcRPMs = 1300 + 14.3 * distance;
+        CalcRPMs = 2500 + 20 * distance;
+        //Outake.FarShotVelo = ((int) CalcRPMs);
     }
 
     /* ============================================================
