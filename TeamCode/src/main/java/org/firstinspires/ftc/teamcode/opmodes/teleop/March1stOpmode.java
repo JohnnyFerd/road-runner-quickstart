@@ -121,6 +121,9 @@ public class March1stOpmode extends LinearOpMode {
             if(intakeOn) intake.intakeOn();
             else intake.intakeOff();
         }
+        if(curr1.left_bumper && !prev1.left_bumper){
+            intake.intakeReverse();
+        }
         if(curr1.b && !prev1.b){
             tongueUp = !tongueUp;
 

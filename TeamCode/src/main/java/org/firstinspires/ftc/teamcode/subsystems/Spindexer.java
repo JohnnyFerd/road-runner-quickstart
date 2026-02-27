@@ -117,6 +117,16 @@ public class Spindexer extends Subsystem {
     }
 
     /* ================= Shooting ================= */
+    public BallColor getVisibleBallColor() {
+        updateHSV();
+        if (seesGreen()) {
+            return BallColor.GREEN;
+        }
+        if (seesPurple()) {
+            return BallColor.PURPLE;
+        }
+        return null;
+    }
 
     public void shoot() {
         rotateByFraction(-1.0 / 3.0);

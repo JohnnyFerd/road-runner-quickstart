@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.opmodes.AlanStuff.AutoBase;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.Outake;
+import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 
 import java.util.List;
 
@@ -231,13 +232,22 @@ public class RedAutoGoal extends AutoBase {
         }
 
         int desiredIndex = Math.min(shotIndex, 2);
-        if (pattern.charAt(desiredIndex) == 'G') {
-            if (robot.spindexer.isIdle()) {
-                robot.spindexer.rotateByFraction(1.0 / 3.0);
+        Spindexer.BallColor desiredColor = pattern.charAt(desiredIndex) == 'G'
+                ? Spindexer.BallColor.GREEN
+                : Spindexer.BallColor.PURPLE;
+
+        for (int i = 0; i < 3 && opModeIsActive(); i++) {
+            Spindexer.BallColor visibleColor = robot.spindexer.getVisibleBallColor();
+
+            if (visibleColor == desiredColor || visibleColor == null) {
+                return;
+            }
+
+            if (!robot.spindexer.isIdle()) {
                 waitForSpindexerIdle();
             }
         }
-    }
+        }
 
     private String detectPattern(String fallback) {
         LLResult result = limelight.getLatestResult();
