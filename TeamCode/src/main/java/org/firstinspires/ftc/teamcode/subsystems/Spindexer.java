@@ -29,8 +29,8 @@ public class Spindexer extends Subsystem {
     private boolean ballCurrentlyDetected = false;
 
     public static double kP = 0.00008;
-    public static double MAX_POWER = 0.6;
-    public static double MIN_POWER = 0.08;
+    public static double MAX_POWER = 1;
+    public static double MIN_POWER = 0.01;
 
     /* ================= Color Tunables ================= */
 

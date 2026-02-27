@@ -26,7 +26,7 @@ public class Turret extends Subsystem {
     // gearing + encoder constants
     public static double gearRatio = 85.0 / 16.0;
     public static double ticksperdeg = 560.0/360;
-    public static double MAX_TURRET_DEG = 60.0;
+    public static double MAX_TURRET_DEG = 45.0;
     private boolean aimAtGoal = false;
 
     // tuning

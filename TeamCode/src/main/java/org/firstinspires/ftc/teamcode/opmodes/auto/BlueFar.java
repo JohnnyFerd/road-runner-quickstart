@@ -14,15 +14,15 @@ import org.firstinspires.ftc.teamcode.subsystems.Outake;
 
 import java.util.List;
 
-@Autonomous(name = "Red Far", group = "Auto")
-public class RedFar extends AutoBase {
+@Autonomous(name = "Blue Far", group = "Auto")
+public class BlueFar extends AutoBase {
 
-    private static final Pose2d START_POSE = new Pose2d(60,  10, Math.toRadians(0));
-    private static final Vector2d SCAN_POSE = new Vector2d(53,  13);
+    private static final Pose2d START_POSE = new Pose2d(60, -10, Math.toRadians(0));
+    private static final Vector2d SCAN_POSE = new Vector2d(53, -13);
 
     private static final long SHOT_SPINUP_MS = 1000;
     private static final long SHOT_SETTLE_MS = 500;
-    private static final long FEED_SETTLE_MS = 500;
+    private static final long FEED_SETTLE_MS = 700;
 
     private MecanumDrive drive;
     private Limelight3A limelight;
@@ -58,7 +58,7 @@ public class RedFar extends AutoBase {
         Actions.runBlocking(
                 drive.actionBuilder(START_POSE)
                         .strafeTo(SCAN_POSE)
-                        .turn(Math.toRadians(-17.5))
+                        .turn(Math.toRadians(17.5))
                         .build()
         );
 
@@ -109,7 +109,6 @@ public class RedFar extends AutoBase {
             sleep(10);
         }
     }
-
     private void positionSpindexerForPattern(String pattern, int shotIndex) {
         if (pattern == null || pattern.length() != 3) {
             return;
@@ -160,5 +159,6 @@ public class RedFar extends AutoBase {
         limelight.stop();
         robot.update(true, true);
         waitWithUpdates(200);
+
     }
 }
