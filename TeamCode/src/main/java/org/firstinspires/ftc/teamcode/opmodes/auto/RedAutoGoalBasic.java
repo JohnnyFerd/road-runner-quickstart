@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 import java.util.List;
 
 @Autonomous(name = "Red Auto Goal", group = "Auto")
-public class RedAutoGoal extends AutoBase {
+public class RedAutoGoalBasic extends AutoBase {
 
     private static final Pose2d START_POSE = new Pose2d(-52, 49, Math.toRadians(127.5));
     private static final Vector2d SCAN_AND_SHOOT_POSE = new Vector2d(-12, 15);
@@ -152,7 +152,6 @@ public class RedAutoGoal extends AutoBase {
             return;
         }
         robot.turret.setAim(true);
-
         robot.outake.setPresetVelocity(Outake.FarShotVelo);
         sleep(200);
         robot.outake.intakeOn();
@@ -164,7 +163,7 @@ public class RedAutoGoal extends AutoBase {
         robot.Tongue.setDown();
         for (int i = 0; i < shots && opModeIsActive(); i++) {
 
-            
+
             waitWithUpdates(FEED_SETTLE_MS);
             robot.spindexer.rotateByFraction(-1.0 / 3.0);
             waitForSpindexerIdle();
