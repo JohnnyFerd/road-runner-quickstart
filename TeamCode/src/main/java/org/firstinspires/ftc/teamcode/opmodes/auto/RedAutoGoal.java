@@ -175,6 +175,50 @@ public class RedAutoGoal extends AutoBase {
         robot.turret.setAim(false);
 
     }
+    private void waitForSpindexerIdle() {
+        while (opModeIsActive() && !robot.spindexer.isIdle()) {
+            robot.update(true, true);
+            sleep(10);
+        }
+    }
+
+    private void alignSpindexerForDesiredColor(String pattern, int shotIndex) {
+        if (pattern == null || pattern.length() != 3) {
+            return;
+        }
+
+        int desiredIndex = Math.min(shotIndex, 2);
+
+        if (robot.spindexer.isIdle()) {
+                robot.spindexer.rotateByFraction(1.0 / 3.0);
+                char desiredColor = Character.toUpperCase(pattern.charAt(desiredIndex));
+                if (desiredColor != 'G' && desiredColor != 'P') {
+                    return;
+                }
+
+                int attempts = 0;
+                while (opModeIsActive() && attempts < 3) {
+                    boolean ballVisible = robot.spindexer.seesBall();
+                    boolean matchesDesired = (desiredColor == 'G' && ballVisible && robot.spindexer.seesGreen())
+                            || (desiredColor == 'P' && ballVisible && robot.spindexer.seesPurple());
+
+                    if (matchesDesired) {
+                        return;
+                    }
+
+                    if (!robot.spindexer.isIdle()) {
+
+                        continue;
+                    }
+
+                    robot.spindexer.rotateByFraction(1.0 / 3.0);
+                    waitForSpindexerIdle();
+                    sleep(40);
+                    attempts++;
+                }
+
+        }
+    }
 
     private void positionSpindexerForPattern(String pattern, int shotIndex) {
         if (pattern == null || pattern.length() != 3) {
@@ -214,12 +258,6 @@ public class RedAutoGoal extends AutoBase {
         return detected;
     }
 
-    private void waitForSpindexerIdle() {
-        while (opModeIsActive() && !robot.spindexer.isIdle()) {
-            robot.update(true, true);
-            sleep(10);
-        }
-    }
 
     private void safeStop() {
         robot.intake.intakeOff();
