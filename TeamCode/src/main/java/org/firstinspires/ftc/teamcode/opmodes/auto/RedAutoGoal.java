@@ -70,7 +70,7 @@ public class RedAutoGoal extends AutoBase {
 
         pattern = detectPattern(pattern);
 
-        doShotCycle(pattern, 3);
+        doShotCycle(3);
 
         Actions.runBlocking(
                 drive.actionBuilder(drive.localizer.getPose())
@@ -84,7 +84,7 @@ public class RedAutoGoal extends AutoBase {
         robot.intake.intakeOn();
         collectAtPose(PICKUP_3);
 
-        doShotCycle(pattern, robot.spindexer.getBallCount());
+        doShotCycle(3);
 
         safeStop();
     }
@@ -147,7 +147,7 @@ public class RedAutoGoal extends AutoBase {
         }
     }
 
-    private void doShotCycle(String pattern, int shots) {
+    private void doShotCycle(int shots) {
         if (shots <= 0) {
             return;
         }
@@ -161,19 +161,18 @@ public class RedAutoGoal extends AutoBase {
         while ( robot.Tongue.isBusy()) {
             robot.update(true,true);   // or whatever runs subsystem updates
         }
+        robot.Tongue.setDown();
         for (int i = 0; i < shots && opModeIsActive(); i++) {
 
-            robot.Tongue.setDown();
+            
             waitWithUpdates(FEED_SETTLE_MS);
-
-            positionSpindexerForPattern(pattern, i);
             robot.spindexer.rotateByFraction(-1.0 / 3.0);
             waitForSpindexerIdle();
             robot.Tongue.setUp();
             waitWithUpdates(FEED_SETTLE_MS);
 
         }
-
+        robot.Tongue.setDown();
 
         robot.outake.intakeOff();
         robot.Tongue.setDown();
@@ -246,7 +245,7 @@ public class RedAutoGoal extends AutoBase {
             if (!robot.spindexer.isIdle()) {
                 waitForSpindexerIdle();
             }
-        }
+}
         }
 
     private String detectPattern(String fallback) {

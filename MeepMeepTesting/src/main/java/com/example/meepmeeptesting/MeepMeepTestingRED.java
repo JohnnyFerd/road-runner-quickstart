@@ -16,12 +16,27 @@ public class MeepMeepTestingRED {
                 .setConstraints(60, 60, Math.toRadians(180), Math.toRadians(180), 15)
                 .followTrajectorySequence(drive ->
                         // Mirrored over X-axis: (x, y, heading) -> (x, -y, -heading)
-                        drive.trajectorySequenceBuilder(new Pose2d(60, -10, Math.toRadians(-180)))
-                                .strafeTo(new Vector2d(53, -13)) // x40 while this happening, limelight detection will scan and store the pattern on the obelisk
+                        drive.trajectorySequenceBuilder(new Pose2d(-52, -49, Math.toRadians(-127.5)))
+                                .strafeTo(new Vector2d(-12, -15)) // x40 while this happening, limelight detection will scan and store the pattern on the obelisk
                                 // SHOOT 3 BALLS
-                                .turn(Math.toRadians(30))
+
+                                .turn(Math.toRadians(37.5))           // mirrored turn to pick up new balls
+                                // intake on
+                                .strafeTo(new Vector2d(-12, -37))
+                                .waitSeconds(1)
+                                // check if ball registered: if green or purple is detected from spindexer class
+                                // if ball is registered, spin the spindexer 1/3
+                                .strafeTo(new Vector2d(-12, -43))
+                                .waitSeconds(1)
+                                // check if ball registered: if green or purple is detected from spindexer class
+                                // if ball is registered, spin the spindexer 1/3
+                                .strafeTo(new Vector2d(-12, -52.5))
+                                .waitSeconds(1)
+                                .strafeTo(new Vector2d(-12, -10))
+                                // check if ball registered: if green or purple is detected from spindexer class
+                                // if ball is registered, spin the spindexer 1/3
                                 // balls will have been picked up in PPG order, using the pattern detected by limelight,
-                                // move spindexer to that slot, turn on outake to 3800 rpm, lift tongue up, repeat 2 more times
+                                // move spindexer to that slot, turn on outake to 3000 rpm, lift tongue up, repeat 2 more times
 
                                 .build()
                 );
