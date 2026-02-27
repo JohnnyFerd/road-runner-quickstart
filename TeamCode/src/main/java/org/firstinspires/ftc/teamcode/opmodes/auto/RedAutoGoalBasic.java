@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 
 import java.util.List;
 
-@Autonomous(name = "Red Auto Goal", group = "Auto")
+@Autonomous(name = "Red Auto Goal Basic", group = "Auto")
 public class RedAutoGoalBasic extends AutoBase {
 
     private static final Pose2d START_POSE = new Pose2d(-52, 49, Math.toRadians(127.5));

@@ -97,11 +97,15 @@ public class RedFarPattern extends AutoBase {
                 Spindexer.BallColor visible = robot.spindexer.getVisibleBallColor();
 
                 if (visible == desiredColor) {
-                    break;
+                    while (!robot.spindexer.isIdle()){
+                        robot.update(true,true);
+                    }
+                        break;
+
                 }
 
                 robot.spindexer.rotateByFraction(1.0 / 3.0);
-                waitForSpindexerIdle();
+
                 attempts++;
             }
 
