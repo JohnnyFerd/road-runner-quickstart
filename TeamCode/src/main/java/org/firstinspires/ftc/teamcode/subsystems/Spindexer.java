@@ -26,6 +26,7 @@ public class Spindexer extends Subsystem {
 
     public static double POWER = 0.5;
     public static double TICKS_PER_REV = 8192;
+    private boolean ballCurrentlyDetected = false;
 
     public static double kP = 0.00008;
     public static double MAX_POWER = 0.6;
@@ -89,9 +90,9 @@ public class Spindexer extends Subsystem {
 
     /* ================= Ball Recording ================= */
 
-    public void recordBall() {
+    public boolean recordBall() {
 
-        if (ballCount >= 3) return;
+        if (ballCount >= 3) return false;
 
         updateHSV();
 
@@ -100,9 +101,19 @@ public class Spindexer extends Subsystem {
         if (seesGreen()) detected = BallColor.GREEN;
         else if (seesPurple()) detected = BallColor.PURPLE;
 
-        if (detected != null) {
-            balls[ballCount++] = detected;
+        if (detected == null) {
+            ballCurrentlyDetected = false;
+            return false;
         }
+
+        if (ballCurrentlyDetected || ballCount >= 3) {
+            return false;
+        }
+
+        balls[ballCount++] = detected;
+        ballCurrentlyDetected = true;
+        return true;
+
     }
 
     /* ================= Shooting ================= */
@@ -127,7 +138,9 @@ public class Spindexer extends Subsystem {
     public void catalogue() {
         rotateByFraction(1.0 / 3.0);
     }
-
+    public int getBallCount() {
+        return ballCount;
+    }
     private void shiftLeft() {
         for (int i = 0; i < ballCount - 1; i++) {
             balls[i] = balls[i + 1];
@@ -205,19 +218,25 @@ public class Spindexer extends Subsystem {
         Color.RGBToHSV((int) r, (int) g, (int) b, hsv);
     }
 
-    private boolean seesGreen() {
+    public boolean seesGreen() {
         return hsv[0] > GREEN_H_MIN &&
                 hsv[0] < GREEN_H_MAX &&
                 hsv[1] > MIN_SATURATION &&
                 hsv[2] > MIN_VALUE;
     }
 
-    private boolean seesPurple() {
+    public boolean seesPurple() {
         return hsv[0] > PURPLE_H_MIN &&
                 hsv[0] < PURPLE_H_MAX &&
                 hsv[1] > MIN_SATURATION &&
                 hsv[2] > MIN_VALUE;
     }
+
+    public boolean seesBall() {
+        updateHSV();
+        return seesGreen() || seesPurple();
+    }
+
 
     /* ================= Telemetry ================= */
 

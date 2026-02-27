@@ -15,6 +15,7 @@ public class Intake extends Subsystem {
 
     /* ===== Tunables ===== */
     public static double INTAKE_POWER = 1;
+    private double manualPower = 0;
 
     /* ===== State ===== */
     private Mode mode = Mode.OFF;
@@ -22,6 +23,7 @@ public class Intake extends Subsystem {
     private enum Mode {
         ON,
         REVERSE,
+        MANUAL,
         OFF
     }
 
@@ -40,6 +42,11 @@ public class Intake extends Subsystem {
 
 
     }
+    public void setPower(double power) {
+        manualPower = power;
+        mode = Mode.MANUAL;
+    }
+
 
     public void intakeReverse() {
         mode = Mode.REVERSE;
@@ -61,11 +68,16 @@ public class Intake extends Subsystem {
             case REVERSE:
                 motor.setPower(-INTAKE_POWER);
                 break;
+            case MANUAL:
+                motor.setPower(manualPower);
+                break;
 
             case OFF:
             default:
                 motor.setPower(0);
                 break;
+
+
         }
     }
 
