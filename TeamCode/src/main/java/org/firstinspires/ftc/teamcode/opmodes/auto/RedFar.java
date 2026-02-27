@@ -21,7 +21,7 @@ public class RedFar extends AutoBase {
     private static final Vector2d SCAN_POSE = new Vector2d(53, -13);
 
     private static final long SHOT_SPINUP_MS = 1000;
-    private static final long SHOT_SETTLE_MS = 250;
+    private static final long SHOT_SETTLE_MS = 500;
     private static final long FEED_SETTLE_MS = 500;
 
     private MecanumDrive drive;
@@ -72,24 +72,43 @@ public class RedFar extends AutoBase {
         if (shots <= 0) {
             return;
         }
+        robot.turret.setAim(true);
 
         robot.outake.setPresetVelocity(Outake.FarShotVelo);
+        sleep(200);
         robot.outake.intakeOn();
-        robot.Tongue.setUp();
-        sleep(SHOT_SPINUP_MS);
+        robot.Tongue.setDown();
 
+        while ( robot.Tongue.isBusy()) {
+            robot.update(true,true);   // or whatever runs subsystem updates
+        }
         for (int i = 0; i < shots && opModeIsActive(); i++) {
+
+            robot.Tongue.setDown();
+            waitWithUpdates(FEED_SETTLE_MS);
+
             positionSpindexerForPattern(pattern, i);
             robot.spindexer.rotateByFraction(-1.0 / 3.0);
             waitForSpindexerIdle();
-            sleep(FEED_SETTLE_MS);
+            robot.Tongue.setUp();
+            waitWithUpdates(FEED_SETTLE_MS);
+
         }
 
-        sleep(SHOT_SETTLE_MS);
+
         robot.outake.intakeOff();
         robot.Tongue.setDown();
+        robot.turret.setAim(false);
+
     }
 
+    private void waitWithUpdates(long delayMs) {
+        long start = System.currentTimeMillis();
+        while (opModeIsActive() && (System.currentTimeMillis() - start) < delayMs) {
+            robot.update(true, true);
+            sleep(10);
+        }
+    }
     private void positionSpindexerForPattern(String pattern, int shotIndex) {
         if (pattern == null || pattern.length() != 3) {
             return;

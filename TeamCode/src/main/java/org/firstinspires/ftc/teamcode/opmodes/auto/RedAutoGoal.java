@@ -128,6 +128,13 @@ public class RedAutoGoal extends AutoBase {
         }
     }
 
+    private void waitWithUpdates(long delayMs) {
+        long start = System.currentTimeMillis();
+        while (opModeIsActive() && (System.currentTimeMillis() - start) < delayMs) {
+            robot.update(true, true);
+            sleep(10);
+        }
+    }
     private void holdIntakeWhileBallDetected(long timeoutMs) {
         long start = System.currentTimeMillis();
         while (opModeIsActive()
@@ -154,27 +161,25 @@ public class RedAutoGoal extends AutoBase {
             robot.update(true,true);   // or whatever runs subsystem updates
         }
         for (int i = 0; i < shots && opModeIsActive(); i++) {
+
             robot.Tongue.setDown();
-            while ( robot.Tongue.isBusy()) {
-                robot.update(true,true);   // or whatever runs subsystem updates
-            }
+            waitWithUpdates(FEED_SETTLE_MS);
 
             positionSpindexerForPattern(pattern, i);
             robot.spindexer.rotateByFraction(-1.0 / 3.0);
             waitForSpindexerIdle();
             robot.Tongue.setUp();
-            while ( robot.Tongue.isBusy()) {
-                robot.update(true,true);   // or whatever runs subsystem updates
-            }
+            waitWithUpdates(FEED_SETTLE_MS);
 
         }
 
-        sleep(SHOT_SETTLE_MS);
+
         robot.outake.intakeOff();
         robot.Tongue.setDown();
         robot.turret.setAim(false);
 
     }
+
     private void waitForSpindexerIdle() {
         while (opModeIsActive() && !robot.spindexer.isIdle()) {
             robot.update(true, true);

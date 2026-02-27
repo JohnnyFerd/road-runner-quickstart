@@ -17,7 +17,7 @@ public class Tongue extends Subsystem {
     /* ===== Tunables ===== */
     public static double DOWN_POSITION = 0.03;
     public static double UP_POSITION = 0.34;
-    public static double MOVE_TIME_MS = 180;   // time for servo to physically move
+    public static double MOVE_TIME_MS = 300;   // time for servo to physically move
 
     /* ===== State ===== */
     private Mode targetMode = Mode.DOWN;
