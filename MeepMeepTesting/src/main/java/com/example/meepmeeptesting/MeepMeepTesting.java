@@ -1,5 +1,7 @@
 package com.example.meepmeeptesting;
 
+
+
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 
 import org.rowlandhall.meepmeep.MeepMeep;
@@ -25,8 +27,7 @@ public class MeepMeepTesting {
                         .build());
 
 
-        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_OFFICIAL)
-
+                meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_OFFICIAL)
                 .setBackgroundAlpha(0.95f)
                 .addEntity(myBot)
                 .start();

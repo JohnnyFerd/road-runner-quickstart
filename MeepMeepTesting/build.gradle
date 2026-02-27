@@ -8,8 +8,9 @@ java {
 repositories {
     maven { url = 'https://jitpack.io' }
     maven { url = 'https://maven.brott.dev/' }
-}
 
+}
 dependencies {
-    implementation 'com.github.rh-robotics:MeepMeep:v1.1.1'
+    implementation 'com.github.RajPahilwani:MeepMeep:v1.1.1'
+    
 }
