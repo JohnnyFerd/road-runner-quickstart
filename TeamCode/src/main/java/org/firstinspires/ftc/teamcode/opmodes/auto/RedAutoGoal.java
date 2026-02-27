@@ -22,11 +22,11 @@ public class RedAutoGoal extends AutoBase {
     private static final Vector2d PICKUP_2 = new Vector2d(-12, 43);
     private static final Vector2d PICKUP_3 = new Vector2d(-12, 52.5);
 
-    private static final long SHOT_SPINUP_MS = 1000;
-    private static final long SHOT_SETTLE_MS = 250;
-    private static final long FEED_SETTLE_MS = 500;
-    private static final long PICKUP_SETTLE_MS = 350;
-    private static final long PICKUP_TIMEOUT_MS = 1600;
+    private static final long SHOT_SPINUP_MS = 2000;
+    private static final long SHOT_SETTLE_MS = 50;
+    private static final long FEED_SETTLE_MS = 50;
+    private static final long PICKUP_SETTLE_MS = 50;
+    private static final long PICKUP_TIMEOUT_MS = 1400;
 
     private static final double HOLD_INTAKE_POWER = -0.4;
 
@@ -76,9 +76,11 @@ public class RedAutoGoal extends AutoBase {
                         .turn(Math.toRadians(-37.5))
                         .build()
         );
-
+        robot.intake.intakeOn();
         collectAtPose(PICKUP_1);
+        robot.intake.intakeOn();
         collectAtPose(PICKUP_2);
+        robot.intake.intakeOn();
         collectAtPose(PICKUP_3);
 
         doShotCycle(pattern, robot.spindexer.getBallCount());
@@ -88,6 +90,7 @@ public class RedAutoGoal extends AutoBase {
 
     private void collectAtPose(Vector2d pickupPose) {
         robot.intake.intakeOn();
+        robot.intake.setPower(1);
 
         Actions.runBlocking(
                 drive.actionBuilder(drive.localizer.getPose())
@@ -117,7 +120,7 @@ public class RedAutoGoal extends AutoBase {
             sleep(30);
         }
 
-        robot.intake.intakeOn();
+
 
         while (opModeIsActive() && !robot.spindexer.isIdle()) {
             robot.update(true, true);
@@ -140,22 +143,37 @@ public class RedAutoGoal extends AutoBase {
         if (shots <= 0) {
             return;
         }
+        robot.turret.setAim(true);
 
         robot.outake.setPresetVelocity(Outake.FarShotVelo);
+        sleep(200);
         robot.outake.intakeOn();
-        robot.Tongue.setUp();
-        sleep(SHOT_SPINUP_MS);
+        robot.Tongue.setDown();
 
+        while ( robot.Tongue.isBusy()) {
+            robot.update(true,true);   // or whatever runs subsystem updates
+        }
         for (int i = 0; i < shots && opModeIsActive(); i++) {
+            robot.Tongue.setDown();
+            while ( robot.Tongue.isBusy()) {
+                robot.update(true,true);   // or whatever runs subsystem updates
+            }
+
             positionSpindexerForPattern(pattern, i);
             robot.spindexer.rotateByFraction(-1.0 / 3.0);
             waitForSpindexerIdle();
-            sleep(FEED_SETTLE_MS);
+            robot.Tongue.setUp();
+            while ( robot.Tongue.isBusy()) {
+                robot.update(true,true);   // or whatever runs subsystem updates
+            }
+
         }
 
         sleep(SHOT_SETTLE_MS);
         robot.outake.intakeOff();
         robot.Tongue.setDown();
+        robot.turret.setAim(false);
+
     }
 
     private void positionSpindexerForPattern(String pattern, int shotIndex) {

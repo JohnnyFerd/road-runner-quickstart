@@ -104,7 +104,8 @@ public class JVBoysSoccerRobot {
         if (isAuto) {
             this.hwMap = hwMap;
             this.telemetry = telemetry;
-
+            initIMU();
+            initHardware();
             RobotSettings.STORE_POSE = true;
 
             // Configuring Hubs to auto mode for bulk reads
@@ -127,8 +128,7 @@ public class JVBoysSoccerRobot {
                     hwMap,
                     telemetry
             );
-            initIMU();
-            initHardware();
+
             drivetrainSubsystem = new Drivetrain(hwMap, telemetry, this);
             Tongue = new Tongue("Tongue1", "Tongue2", hwMap, telemetry);
 
@@ -151,6 +151,7 @@ public class JVBoysSoccerRobot {
         initDrivetrainHardware();
         initShooterHardware();
         initTurretHardware();
+
 
     }
 

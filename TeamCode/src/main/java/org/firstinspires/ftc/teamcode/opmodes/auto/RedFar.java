@@ -7,31 +7,22 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.opmodes.AlanStuff.AutoBase;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
-import org.firstinspires.ftc.teamcode.subsystems.JVBoysSoccerRobot;
 import org.firstinspires.ftc.teamcode.subsystems.Outake;
 
 import java.util.List;
 
-@Autonomous(name = "Blue Auto Goal", group = "Auto")
-public class BlueAutoGoal extends AutoBase {
+@Autonomous(name = "Red Far", group = "Auto")
+public class RedFar extends AutoBase {
 
-    private static final Pose2d START_POSE = new Pose2d(-52, -49, Math.toRadians(52.5));
-    private static final Vector2d SCAN_AND_SHOOT_POSE = new Vector2d(-12, -15);
-    private static final Vector2d PICKUP_1 = new Vector2d(-12, -37);
-    private static final Vector2d PICKUP_2 = new Vector2d(-12, -43);
-    private static final Vector2d PICKUP_3 = new Vector2d(-12, -52.5);
+    private static final Pose2d START_POSE = new Pose2d(60, -10, Math.toRadians(-180));
+    private static final Vector2d SCAN_POSE = new Vector2d(53, -13);
 
     private static final long SHOT_SPINUP_MS = 1000;
-    private static final long SHOT_SETTLE_MS = 1000;
-    private static final long FEED_SETTLE_MS = 1000;
-    private static final long PICKUP_SETTLE_MS = 500;
-    private static final long PICKUP_TIMEOUT_MS = 1600;
-    private static final double HOLD_INTAKE_POWER = -0.4;
-
+    private static final long SHOT_SETTLE_MS = 250;
+    private static final long FEED_SETTLE_MS = 500;
 
     private MecanumDrive drive;
     private Limelight3A limelight;
@@ -66,77 +57,15 @@ public class BlueAutoGoal extends AutoBase {
 
         Actions.runBlocking(
                 drive.actionBuilder(START_POSE)
-                        .strafeTo(SCAN_AND_SHOOT_POSE)
+                        .strafeTo(SCAN_POSE)
+                        .turn(Math.toRadians(30))
                         .build()
         );
 
         pattern = detectPattern(pattern);
-
         doShotCycle(pattern, 3);
 
-        Actions.runBlocking(
-                drive.actionBuilder(drive.localizer.getPose())
-                        .turn(Math.toRadians(-37.5))
-                        .build()
-        );
-
-        collectAtPose(PICKUP_1);
-        collectAtPose(PICKUP_2);
-        collectAtPose(PICKUP_3);
-
-        doShotCycle(pattern, robot.spindexer.getBallCount());
-
         safeStop();
-    }
-
-    private void collectAtPose(Vector2d pickupPose) {
-        robot.intake.intakeOn();
-
-        Actions.runBlocking(
-                drive.actionBuilder(drive.localizer.getPose())
-                        .strafeTo(pickupPose)
-                        .build()
-        );
-
-        // If a ball is already at the color sensor, keep intake at -0.4 while indexing it away.
-        if (robot.spindexer.seesBall()) {
-            if (robot.spindexer.isIdle()) {
-                robot.spindexer.rotateByFraction(1.0 / 3.0);
-            }
-            holdIntakeWhileBallDetected(PICKUP_TIMEOUT_MS);
-        }
-
-        long start = System.currentTimeMillis();
-        while (opModeIsActive() && (System.currentTimeMillis() - start) < PICKUP_TIMEOUT_MS) {
-            robot.update(true, true);
-            if (robot.spindexer.recordBall()) {
-                if (robot.spindexer.isIdle()) {
-                    robot.spindexer.rotateByFraction(1.0 / 3.0);
-                }
-                holdIntakeWhileBallDetected(PICKUP_SETTLE_MS + 400);
-                sleep(PICKUP_SETTLE_MS);
-                break;
-            }
-            sleep(30);
-        }
-
-        robot.intake.intakeOn();
-
-        while (opModeIsActive() && !robot.spindexer.isIdle()) {
-            robot.update(true, true);
-            sleep(10);
-        }
-    }
-
-    private void holdIntakeWhileBallDetected(long timeoutMs) {
-        long start = System.currentTimeMillis();
-        while (opModeIsActive()
-                && robot.spindexer.seesBall()
-                && (System.currentTimeMillis() - start) < timeoutMs) {
-            robot.intake.setPower(HOLD_INTAKE_POWER);
-            robot.update(true, true);
-            sleep(10);
-        }
     }
 
     private void doShotCycle(String pattern, int shots) {
@@ -150,12 +79,9 @@ public class BlueAutoGoal extends AutoBase {
         sleep(SHOT_SPINUP_MS);
 
         for (int i = 0; i < shots && opModeIsActive(); i++) {
-            robot.Tongue.setDown();
-            sleep(FEED_SETTLE_MS);
             positionSpindexerForPattern(pattern, i);
             robot.spindexer.rotateByFraction(-1.0 / 3.0);
             waitForSpindexerIdle();
-            robot.Tongue.setUp();
             sleep(FEED_SETTLE_MS);
         }
 
@@ -170,11 +96,9 @@ public class BlueAutoGoal extends AutoBase {
         }
 
         int desiredIndex = Math.min(shotIndex, 2);
-        if (pattern.charAt(desiredIndex) == 'G') {
-            if (robot.spindexer.isIdle()) {
-                robot.spindexer.rotateByFraction(1.0 / 3.0);
-                waitForSpindexerIdle();
-            }
+        if (pattern.charAt(desiredIndex) == 'G' && robot.spindexer.isIdle()) {
+            robot.spindexer.rotateByFraction(1.0 / 3.0);
+            waitForSpindexerIdle();
         }
     }
 

@@ -21,7 +21,7 @@ public class MeepMeepTestingRED {
                                 // SHOOT 3 BALLS
                                 .turn(Math.toRadians(30))
                                 // balls will have been picked up in PPG order, using the pattern detected by limelight,
-                                // move spindexer to that slot, turn on outake to 3000 rpm, lift tongue up, repeat 2 more times
+                                // move spindexer to that slot, turn on outake to 3800 rpm, lift tongue up, repeat 2 more times
 
                                 .build()
                 );

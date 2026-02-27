@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -16,60 +17,72 @@ public class Tongue extends Subsystem {
     /* ===== Tunables ===== */
     public static double DOWN_POSITION = 0.03;
     public static double UP_POSITION = 0.34;
+    public static double MOVE_TIME_MS = 180;   // time for servo to physically move
 
     /* ===== State ===== */
-    private Mode mode = Mode.DOWN;
+    private Mode targetMode = Mode.DOWN;
+    private final ElapsedTime moveTimer = new ElapsedTime();
+    private boolean moving = false;
 
     private enum Mode {
         UP,
         DOWN
     }
 
-    public Tongue(String tongue1Name, String tongue2Name, HardwareMap hwMap, Telemetry telemetry) {
+    public Tongue(String tongue1Name, String tongue2Name,
+                  HardwareMap hwMap, Telemetry telemetry) {
+
         this.telemetry = telemetry;
 
         tongue1 = hwMap.get(Servo.class, tongue1Name);
         tongue2 = hwMap.get(Servo.class, tongue2Name);
 
-        // Initialize positions
-        tongue1.setPosition(DOWN_POSITION);
-        tongue2.setPosition(1 - DOWN_POSITION);
+        setDown();  // initialize
     }
 
     /* ===== Commands ===== */
 
-    // Toggle between up and down
-
-
-    // Force tongue up
     public void setUp() {
-        mode = Mode.UP;
-        tongue1.setPosition(UP_POSITION);
-        tongue2.setPosition(1 - UP_POSITION);
+        targetMode = Mode.UP;
+        moving = true;
+        moveTimer.reset();
     }
 
-    // Force tongue down
     public void setDown() {
-        mode = Mode.DOWN;
+        targetMode = Mode.DOWN;
+        moving = true;
+        moveTimer.reset();
+    }
 
+    public boolean isBusy() {
+        return moving;
+    }
 
+    public boolean isUp() {
+        return targetMode == Mode.UP && !moving;
     }
 
     /* ===== Update Loop ===== */
 
     @Override
     public void update() {
-        switch (mode) {
+
+        // Apply position continuously
+        switch (targetMode) {
             case UP:
                 tongue1.setPosition(UP_POSITION);
                 tongue2.setPosition(1 - UP_POSITION);
                 break;
 
             case DOWN:
-            default:
                 tongue1.setPosition(DOWN_POSITION);
                 tongue2.setPosition(1 - DOWN_POSITION);
                 break;
+        }
+
+        // Check if movement time has elapsed
+        if (moving && moveTimer.milliseconds() >= MOVE_TIME_MS) {
+            moving = false;
         }
     }
 
@@ -79,13 +92,10 @@ public class Tongue extends Subsystem {
         tongue2.setPosition(1 - DOWN_POSITION);
     }
 
-    /* ===== Telemetry ===== */
-
     @Override
     public void addTelemetry() {
-        telemetry.addLine("Tongue Servo");
-        telemetry.addData("Mode", mode);
-        telemetry.addData("Tongue1 Pos", tongue1.getPosition());
-        telemetry.addData("Tongue2 Pos", tongue2.getPosition());
+        telemetry.addData("Tongue Target", targetMode);
+        telemetry.addData("Tongue Moving", moving);
+        telemetry.addData("Timer", moveTimer.milliseconds());
     }
 }
