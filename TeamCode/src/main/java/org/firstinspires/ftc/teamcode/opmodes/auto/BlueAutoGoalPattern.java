@@ -3,22 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
-import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.ParallelAction;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.opmodes.AlanStuff.AutoBase;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
-import org.firstinspires.ftc.teamcode.subsystems.Outake;
-import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
-
-import java.util.List;
 
 @Autonomous(name = "Blue Auto Goal Pattern", group = "Auto")
-public class BlueAutoGoalPatternupdatedfunc extends AutoBase {
+public class BlueAutoGoalPattern extends AutoBase {
 
     private static final Pose2d START_POSE = new Pose2d(-52, -49, Math.toRadians(52.5));
     private static final Vector2d SCAN_AND_SHOOT_POSE = new Vector2d(-12, -15);
