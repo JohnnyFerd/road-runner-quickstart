@@ -57,7 +57,12 @@ public class Turret extends Subsystem {
     public void setAim(boolean aim) {
         this.aimAtGoal = aim;
     }
-
+    private double normalizeDegrees(double angle){
+        angle = angle % 360;        // wrap to [-360, 360]
+        if(angle > 180) angle -= 360;
+        if(angle < -180) angle += 360;
+        return angle;
+    }
 
     @Override
     public void update() {
@@ -65,7 +70,7 @@ public class Turret extends Subsystem {
         robotHeading = robot.getHeadingDeg();
 
         // how much robot rotated since start
-        double delta = robotHeading - startHeading;
+        double delta = normalizeDegrees(robotHeading - startHeading);
 
         // CLAMP turret allowed rotation to ±60°
         double clampedDelta = Math.max(-MAX_TURRET_DEG,

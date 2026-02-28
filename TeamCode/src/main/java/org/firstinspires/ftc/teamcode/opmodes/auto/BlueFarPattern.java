@@ -27,7 +27,6 @@ public class BlueFarPattern extends AutoBase {
     private static final long SHOT_SETTLE_MS = 50;
     private static final long FEED_SETTLE_MS = 50;
 
-    private MecanumDrive drive;
     private Limelight3A limelight;
     private String pattern = "PPG";
 
@@ -35,7 +34,7 @@ public class BlueFarPattern extends AutoBase {
     public void runOpMode() {
         startPose=START_POSE;
         initialize();
-        drive = new MecanumDrive(hardwareMap, START_POSE);
+
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
@@ -62,7 +61,9 @@ public class BlueFarPattern extends AutoBase {
         Actions.runBlocking(new ParallelAction(
                 drive.actionBuilder(START_POSE)
                         .strafeTo(SCAN_POSE)
-                        .turn(Math.toRadians(360+17.5))
+                        .turn(Math.toRadians(180))
+                        .turn(Math.toRadians(180))
+                        .turn(Math.toRadians(17.5))
                         .build(),
                 continuousPatternScan()
         ));

@@ -44,7 +44,9 @@ public class RedFarPattern extends AutoBase {
         Actions.runBlocking(new ParallelAction(
                 drive.actionBuilder(drive.localizer.getPose())
                         .strafeTo(SCAN_POSE)
-                        .turn(Math.toRadians(-377.5)) // full spin + extra
+                        .turn(Math.toRadians(-180))
+                        .turn(Math.toRadians(-180))
+                        .turn(Math.toRadians(-17.5))
                         .build(),
                 continuousPatternScan() // parallel Limelight scanning
         ));

@@ -35,7 +35,7 @@ public class RedAutoGoalPattern extends AutoBase {
 
     private static final double HOLD_INTAKE_POWER = -0.4;
 
-    private MecanumDrive drive;
+
     private Limelight3A limelight;
     private String pattern = "PPG";
 
@@ -43,7 +43,7 @@ public class RedAutoGoalPattern extends AutoBase {
     public void runOpMode() {
         startPose=START_POSE;
         initialize();
-        drive = new MecanumDrive(hardwareMap, START_POSE);
+
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);

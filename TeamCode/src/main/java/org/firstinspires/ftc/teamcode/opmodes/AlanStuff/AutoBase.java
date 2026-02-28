@@ -143,7 +143,7 @@ public abstract class AutoBase extends LinearOpMode {
 
     /* ===================== COMPOSITE ACTIONS ===================== */
     protected void doShotCycle(String pattern, int shots) {
-        if (shots <= 0 || pattern == null || pattern.length() != 3) return;
+
 
         Actions.runBlocking(spinUpShooter());
         Actions.runBlocking(waitSeconds(SHOT_SPINUP_MS / 1000.0));
