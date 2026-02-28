@@ -62,9 +62,9 @@ public class RedFarPattern extends AutoBase {
                         .turn(Math.toRadians(-17.5))
                         .build()
         );
+        Actions.runBlocking(doShotCycle(pattern, 3));
+        Actions.runBlocking(doShotCycle(pattern, 3));
 
-        //pattern = detectPattern(pattern);
-        doShotCycle(pattern, 3);
 
         Actions.runBlocking(
                 drive.actionBuilder(drive.localizer.getPose())
