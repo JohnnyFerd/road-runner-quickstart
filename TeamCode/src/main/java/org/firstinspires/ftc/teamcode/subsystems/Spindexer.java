@@ -28,7 +28,7 @@ public class Spindexer extends Subsystem {
     public static double TICKS_PER_REV = 8192;
     private boolean ballCurrentlyDetected = false;
 
-    public static double kP = 0.00008;
+    public static double kP =  0.0008;
     public static double MAX_POWER = 1;
     public static double MIN_POWER = 0.01;
 
@@ -208,7 +208,7 @@ public class Spindexer extends Subsystem {
     }
 
     public boolean isIdle() {
-        return mode == Mode.IDLE;
+        return !(lastError<20);
     }
 
     /* ================= Color Detection ================= */

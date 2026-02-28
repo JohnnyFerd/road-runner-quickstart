@@ -23,7 +23,7 @@ public class RedFarPattern extends AutoBase {
 
     private static final long SHOT_SPINUP_MS = 1000;
     private static final long SHOT_SETTLE_MS = 500;
-    private static final long FEED_SETTLE_MS = 500;
+    private static final long FEED_SETTLE_MS = 2000;
 
     private MecanumDrive drive;
     private Limelight3A limelight;
@@ -63,22 +63,25 @@ public class RedFarPattern extends AutoBase {
                         .build()
         );
 
-        pattern = detectPattern(pattern);
+        //pattern = detectPattern(pattern);
         doShotCycle(pattern, 3);
+
+        Actions.runBlocking(
+                drive.actionBuilder(drive.localizer.getPose())
+                        .turn(Math.toRadians(-37.5))
+                        .build()
+        );
 
         safeStop();
     }
 
     private void doShotCycle(String pattern, int shots) {
-        if (shots <= 0 || pattern == null || pattern.length() != 3) return;
+
 
         robot.turret.setAim(true);
         robot.outake.setPresetVelocity(Outake.FarShotVelo);
+        robot.outake.intakeOn();
 
-        long spinStart = System.currentTimeMillis();
-        while (opModeIsActive() && System.currentTimeMillis() - spinStart < SHOT_SPINUP_MS) {
-            robot.update(true, true);
-        }
 
         for (int i = 0; i < shots && opModeIsActive(); i++) {
 
@@ -93,56 +96,35 @@ public class RedFarPattern extends AutoBase {
             int attempts = 0;
             while (opModeIsActive() && attempts < 3) {
 
-                waitForSpindexerIdle();
+
                 Spindexer.BallColor visible = robot.spindexer.getVisibleBallColor();
 
                 if (visible == desiredColor) {
-                    while (!robot.spindexer.isIdle()){
-                        robot.update(true,true);
-                    }
-                        break;
+                       robot.outake.intakeOn();
+
+                    // Fire
+                        robot.Tongue.setUp();
+                        sleep(200);
+                        robot.Tongue.setDown();
+                        sleep(200);
+
+                    // Advance to next chamber
+                         robot.spindexer.rotateByFraction(1.0 / 3.0);
+
+                    i++;
 
                 }
-
                 robot.spindexer.rotateByFraction(1.0 / 3.0);
-
                 attempts++;
             }
 
-            // Fire
-            robot.Tongue.setUp();
-            waitWithUpdates(FEED_SETTLE_MS);
-            robot.Tongue.setDown();
-            waitWithUpdates(SHOT_SETTLE_MS);
 
-            // Advance to next chamber
-            robot.spindexer.rotateByFraction(1.0 / 3.0);
-            waitForSpindexerIdle();
         }
 
         robot.outake.intakeOff();
         robot.turret.setAim(false);
     }
 
-    private void waitWithUpdates(long delayMs) {
-        long start = System.currentTimeMillis();
-        while (opModeIsActive() && (System.currentTimeMillis() - start) < delayMs) {
-            robot.update(true, true);
-            sleep(10);
-        }
-    }
-
-    private void positionSpindexerForPattern(String pattern, int shotIndex) {
-        if (pattern == null || pattern.length() != 3) {
-            return;
-        }
-
-        int desiredIndex = Math.min(shotIndex, 2);
-        if (pattern.charAt(desiredIndex) == 'G' && robot.spindexer.isIdle()) {
-            robot.spindexer.rotateByFraction(1.0 / 3.0);
-            waitForSpindexerIdle();
-        }
-    }
 
     private String detectPattern(String fallback) {
         LLResult result = limelight.getLatestResult();
@@ -168,12 +150,7 @@ public class RedFarPattern extends AutoBase {
         return detected;
     }
 
-    private void waitForSpindexerIdle() {
-        while (opModeIsActive() && !robot.spindexer.isIdle()) {
-            robot.update(true, true);
-            sleep(10);
-        }
-    }
+
 
     private void safeStop() {
         robot.intake.intakeOff();
@@ -181,6 +158,6 @@ public class RedFarPattern extends AutoBase {
         robot.Tongue.setDown();
         limelight.stop();
         robot.update(true, true);
-        waitWithUpdates(200);
+
     }
 }
