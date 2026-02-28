@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
 import androidx.annotation.NonNull;
-
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -22,8 +23,8 @@ import java.util.List;
 @Autonomous(name = "Red Far Pattern", group = "Auto")
 public class RedFarPattern extends AutoBase {
 
-    private static final Pose2d START_POSE = new Pose2d(60,  10, Math.toRadians(0));
-    private static final Vector2d SCAN_POSE = new Vector2d(53,  13);
+    private static final Pose2d START_POSE = new Pose2d(60, 10, Math.toRadians(0));
+    private static final Vector2d SCAN_POSE = new Vector2d(53, 13);
 
     private static final long SHOT_SPINUP_MS = 1000;
     private static final long SHOT_SETTLE_MS = 500;
@@ -31,9 +32,11 @@ public class RedFarPattern extends AutoBase {
 
     private MecanumDrive drive;
     private Limelight3A limelight;
+    private String pattern = "GPP";
 
     @Override
     public void runOpMode() {
+
         initialize();
         drive = new MecanumDrive(hardwareMap, START_POSE);
 
@@ -45,10 +48,9 @@ public class RedFarPattern extends AutoBase {
         robot.outake.intakeOff();
         robot.intake.intakeOff();
 
-        String pattern = "PPG";
-
+        // ===== Wait for start and show pattern continuously =====
         while (!isStarted() && !isStopRequested()) {
-
+            pattern = detectPattern("GPP");
             telemetry.addLine("Ready for auto");
             telemetry.addData("Detected pattern", pattern);
             telemetry.update();
@@ -60,140 +62,131 @@ public class RedFarPattern extends AutoBase {
             return;
         }
 
-        Actions.runBlocking(
+        // ===== Move to scan position while spinning full +17.5 turn and scanning pattern =====
+        Actions.runBlocking(new ParallelAction(
                 drive.actionBuilder(START_POSE)
                         .strafeTo(SCAN_POSE)
-                        .turn(Math.toRadians(-17.5))
-                        .build()
-        );
-        Actions.runBlocking(doShotCycle(pattern, 3));
+                        .turn(Math.toRadians(-377.5)) // full spin + extra
+                        .build(),
+                continuousPatternScan() // parallel Limelight scanning
+        ));
 
 
+        // ===== Spin up shooter =====
+        Actions.runBlocking(spinUpShooter());
+        Actions.runBlocking(waitSeconds(SHOT_SPINUP_MS / 1000.0));
 
-        Actions.runBlocking(
-                drive.actionBuilder(drive.localizer.getPose())
-                        .turn(Math.toRadians(-37.5))
-                        .build()
-        );
+        // ===== Shoot all 3 balls safely according to pattern =====
+        for (int i = 0; i < 3; i++) {
+            doOneShot(i, pattern);
+        }
 
         safeStop();
     }
 
+    /* ===================== ATOMIC ACTIONS ===================== */
 
-    private Action doShotCycle(String pattern, int shots) {
-
-        return new Action() {
-
-            int shotIndex = 0;
-            int attempts = 0;
-            int state = 0; // 0=spinup, 1=find, 2=fireUp, 3=fireDown, 4=advance, 5=done
-            long stateStart = 0;
-
-            @Override
-            public boolean run(@NonNull TelemetryPacket packet) {
-                robot.update(true, true);
-                if (!opModeIsActive()) return true;
-
-                long now = System.currentTimeMillis();
-
-                if (state == 0) {
-                    robot.turret.setAim(true);
-                    robot.outake.setPresetVelocity(Outake.FarShotVelo);
-                    stateStart = now;
-                    state = 1;
-
-                }
-
-                else if (state == 1) {
-
-                    if (shotIndex >= shots) {
-                        state = 5;
-                    } else {
-
-                        char desiredChar =
-                                Character.toUpperCase(pattern.charAt(Math.min(shotIndex, 2)));
-
-                        Spindexer.BallColor desiredColor =
-                                desiredChar == 'G'
-                                        ? Spindexer.BallColor.GREEN
-                                        : Spindexer.BallColor.PURPLE;
-
-                        Spindexer.BallColor visible =
-                                robot.spindexer.getVisibleBallColor();
-
-                        if (visible == desiredColor) {
-                            robot.Tongue.setUp();
-                            stateStart = now;
-                            state = 2;
-                        } else {
-                            robot.spindexer.rotateByFraction(1.0 / 3.0);
-                            attempts++;
-                            if (attempts >= 3) {
-                                shotIndex++;
-                                attempts = 0;
-                            }
-                        }
-                    }
-                }
-
-                else if (state == 2) {
-                    if (now - stateStart > 200) {
-                        robot.Tongue.setDown();
-                        stateStart = now;
-                        state = 3;
-                    }
-                }
-
-                else if (state == 3) {
-                    if (now - stateStart > 200) {
-                        state = 4;
-                    }
-                }
-
-                else if (state == 4) {
-                    robot.spindexer.rotateByFraction(1.0 / 3.0);
-                    shotIndex++;
-                    attempts = 0;
-                    state = 1;
-                }
-
-                else if (state == 5) {
-                    robot.outake.intakeOff();
-                    robot.turret.setAim(false);
-                    return false;
-                }
-
-                return false;
-            }
+    private Action spinUpShooter() {
+        return packet -> {
+            robot.update(true, true);
+            robot.turret.setAim(true);
+            robot.outake.setPresetVelocity(Outake.FarShotVelo);
+            robot.outake.intakeOn();
+            return true;
         };
     }
 
+    private Action raiseTongue() {
+        return packet -> { robot.Tongue.setUp(); return true; };
+    }
 
+    private Action lowerTongue() {
+        return packet -> { robot.Tongue.setDown(); return true; };
+    }
+
+    private Action rotateSpindexer() {
+        return packet -> {
+            robot.spindexer.rotateByFraction(1.0 / 3.0);
+            return true;
+        };
+    }
+
+    private Action waitForSpindexerIdle() {
+        return packet -> { robot.update(true,true); return robot.spindexer.isIdle(); };
+    }
+
+    private Action waitSeconds(double seconds) {
+        final long start = System.currentTimeMillis();
+        return packet -> {
+            robot.update(true,true);
+            return System.currentTimeMillis() - start >= seconds * 1000;
+        };
+    }
+
+    private Action waitForCorrectBallColor(char desiredChar) {
+        final Spindexer.BallColor desiredColor = desiredChar == 'G' ? Spindexer.BallColor.GREEN : Spindexer.BallColor.PURPLE;
+        return packet -> {
+            robot.update(true,true);
+            return robot.spindexer.getVisibleBallColor() == desiredColor;
+        };
+    }
+
+    private Action continuousPatternScan() {
+        return packet -> {
+            pattern = detectPattern("GPP");
+            return false; // never ends, runs until ParallelAction ends
+        };
+    }
+
+    /* ===================== COMPOSITE SHOT ===================== */
+
+    private void doOneShot(int shotIndex, String pattern) {
+        char desiredChar = Character.toUpperCase(pattern.charAt(Math.min(shotIndex, 2)));
+
+        // Spin Spindexer until correct color visible
+        Actions.runBlocking(waitForCorrectBallColor(desiredChar));
+        Actions.runBlocking(waitForSpindexerIdle());
+
+        // Raise Tongue
+        Actions.runBlocking(raiseTongue());
+
+        // Wait for ball to settle
+        Actions.runBlocking(waitSeconds(SHOT_SETTLE_MS / 1000.0));
+
+        // Lower Tongue
+        Actions.runBlocking(lowerTongue());
+        Actions.runBlocking(waitForTongueDown());
+        // Advance Spindexer for next shot
+        Actions.runBlocking(rotateSpindexer());
+        Actions.runBlocking(waitForSpindexerIdle());
+    }
+
+    /* ===================== PATTERN DETECTION ===================== */
+    private Action waitForTongueDown() {
+        return packet -> {
+            robot.update(true,true);
+            return robot.Tongue.isDown(); // returns true when fully lowered
+        };
+    }
     private String detectPattern(String fallback) {
         LLResult result = limelight.getLatestResult();
-        if (result == null || !result.isValid()) {
-            return fallback;
-        }
+        if (result == null || !result.isValid()) return fallback;
 
         List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
-        if (tags == null) {
-            return fallback;
-        }
+        if (tags == null) return fallback;
 
         String detected = fallback;
         for (LLResultTypes.FiducialResult tag : tags) {
-            if (tag.getFiducialId() == 21) {
-                detected = "GPP";
-            } else if (tag.getFiducialId() == 22) {
-                detected = "PGP";
-            } else if (tag.getFiducialId() == 23) {
-                detected = "PPG";
+            switch (tag.getFiducialId()) {
+                case 21: detected = "GPP"; break;
+                case 22: detected = "PGP"; break;
+                case 23: detected = "PPG"; break;
             }
         }
         return detected;
     }
 
-
+    /* ===================== SAFE STOP ===================== */
 
     private void safeStop() {
         robot.intake.intakeOff();
@@ -201,6 +194,5 @@ public class RedFarPattern extends AutoBase {
         robot.Tongue.setDown();
         limelight.stop();
         robot.update(true, true);
-
     }
 }

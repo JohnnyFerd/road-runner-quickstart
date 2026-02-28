@@ -42,6 +42,9 @@ public class Tongue extends Subsystem {
 
     /* ===== Commands ===== */
 
+    public boolean isDown() {
+        return targetMode == Mode.DOWN && !moving;
+    }
     public void setUp() {
         targetMode = Mode.UP;
         moving = true;

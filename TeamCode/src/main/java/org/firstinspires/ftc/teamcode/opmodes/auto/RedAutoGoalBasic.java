@@ -3,14 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
 import org.firstinspires.ftc.teamcode.opmodes.AlanStuff.AutoBase;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.Outake;
-import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 
 import java.util.List;
 
@@ -24,11 +25,8 @@ public class RedAutoGoalBasic extends AutoBase {
     private static final Vector2d PICKUP_3 = new Vector2d(-12, 52.5);
 
     private static final long SHOT_SPINUP_MS = 2000;
-    private static final long SHOT_SETTLE_MS = 50;
     private static final long FEED_SETTLE_MS = 50;
-    private static final long PICKUP_SETTLE_MS = 50;
     private static final long PICKUP_TIMEOUT_MS = 1400;
-
     private static final double HOLD_INTAKE_POWER = -0.4;
 
     private MecanumDrive drive;
@@ -50,7 +48,7 @@ public class RedAutoGoalBasic extends AutoBase {
         String pattern = "PPG";
 
         while (!isStarted() && !isStopRequested()) {
-            pattern = detectPattern(pattern);
+
             telemetry.addLine("Ready for auto");
             telemetry.addData("Detected pattern", pattern);
             telemetry.update();
@@ -62,221 +60,130 @@ public class RedAutoGoalBasic extends AutoBase {
             return;
         }
 
-        Actions.runBlocking(
-                drive.actionBuilder(START_POSE)
-                        .strafeTo(SCAN_AND_SHOOT_POSE)
-                        .build()
-        );
+        // Move to shoot pose
+        Actions.runBlocking(drive.actionBuilder(START_POSE)
+                .strafeTo(SCAN_AND_SHOOT_POSE)
+                .build());
 
-        pattern = detectPattern(pattern);
 
+
+        // Shoot preloaded balls
         doShotCycle(3);
 
-        Actions.runBlocking(
-                drive.actionBuilder(drive.localizer.getPose())
-                        .turn(Math.toRadians(-37.5))
-                        .build()
-        );
-        robot.intake.intakeOn();
+        // Turn toward pickup path
+        Actions.runBlocking(drive.actionBuilder(drive.localizer.getPose())
+                .turn(Math.toRadians(-37.5))
+                .build());
+
+        // Collect balls
         collectAtPose(PICKUP_1);
-        robot.intake.intakeOn();
         collectAtPose(PICKUP_2);
-        robot.intake.intakeOn();
         collectAtPose(PICKUP_3);
 
+        // Shoot collected balls
         doShotCycle(3);
 
         safeStop();
     }
 
-    private void collectAtPose(Vector2d pickupPose) {
-        robot.intake.intakeOn();
-        robot.intake.setPower(1);
-
-        Actions.runBlocking(
-                drive.actionBuilder(drive.localizer.getPose())
-                        .strafeTo(pickupPose)
-                        .build()
-        );
-
-        // If a ball is already at the color sensor, keep intake at -0.4 while indexing it away.
-        if (robot.spindexer.seesBall()) {
-            if (robot.spindexer.isIdle()) {
-                robot.spindexer.rotateByFraction(1.0 / 3.0);
-            }
-            holdIntakeWhileBallDetected(PICKUP_TIMEOUT_MS);
-        }
-
-        long start = System.currentTimeMillis();
-        while (opModeIsActive() && (System.currentTimeMillis() - start) < PICKUP_TIMEOUT_MS) {
-            robot.update(true, true);
-            if (robot.spindexer.recordBall()) {
-                if (robot.spindexer.isIdle()) {
-                    robot.spindexer.rotateByFraction(1.0 / 3.0);
-                }
-                holdIntakeWhileBallDetected(PICKUP_SETTLE_MS + 400);
-                sleep(PICKUP_SETTLE_MS);
-                break;
-            }
-            sleep(30);
-        }
-
-
-
-        while (opModeIsActive() && !robot.spindexer.isIdle()) {
-            robot.update(true, true);
-            sleep(10);
-        }
+    /* ===================== ROADRUNNER ATOMIC ACTIONS ===================== */
+    private Action raiseTongue() {
+        return packet -> { robot.Tongue.setUp(); return true; };
     }
 
-    private void waitWithUpdates(long delayMs) {
-        long start = System.currentTimeMillis();
-        while (opModeIsActive() && (System.currentTimeMillis() - start) < delayMs) {
-            robot.update(true, true);
-            sleep(10);
-        }
-    }
-    private void holdIntakeWhileBallDetected(long timeoutMs) {
-        long start = System.currentTimeMillis();
-        while (opModeIsActive()
-                && robot.spindexer.seesBall()
-                && (System.currentTimeMillis() - start) < timeoutMs) {
-            robot.intake.setPower(HOLD_INTAKE_POWER);
-            robot.update(true, true);
-            sleep(10);
-        }
+    private Action lowerTongue() {
+        return packet -> { robot.Tongue.setDown(); return true; };
     }
 
+    private Action rotateSpindexer() {
+        return packet -> { robot.spindexer.rotateByFraction(1.0 / 3.0); return true; };
+    }
+
+    private Action waitForSpindexerIdle() {
+        return packet -> { robot.update(true,true); return robot.spindexer.isIdle(); };
+    }
+
+    private Action waitSeconds(double seconds) {
+        final long start = System.currentTimeMillis();
+        return packet -> { robot.update(true,true); return System.currentTimeMillis() - start >= seconds * 1000; };
+    }
+
+    /* ===================== SHOOTING CYCLE ===================== */
     private void doShotCycle(int shots) {
-        if (shots <= 0) {
-            return;
-        }
+        if (shots <= 0) return;
+
         robot.turret.setAim(true);
         robot.outake.setPresetVelocity(Outake.FarShotVelo);
-        sleep(200);
         robot.outake.intakeOn();
         robot.Tongue.setDown();
 
-        while ( robot.Tongue.isBusy()) {
-            robot.update(true,true);   // or whatever runs subsystem updates
+        Actions.runBlocking(waitSeconds(0.2)); // shooter spinup
+
+        for (int i = 0; i < shots; i++) {
+            Actions.runBlocking(raiseTongue());
+            Actions.runBlocking(waitSeconds(FEED_SETTLE_MS / 1000.0));
+            Actions.runBlocking(lowerTongue());
+            Actions.runBlocking(waitSeconds(FEED_SETTLE_MS / 1000.0));
+            Actions.runBlocking(rotateSpindexer());
+            Actions.runBlocking(waitForSpindexerIdle());
         }
-        robot.Tongue.setDown();
-        for (int i = 0; i < shots && opModeIsActive(); i++) {
-
-
-            waitWithUpdates(FEED_SETTLE_MS);
-            robot.spindexer.rotateByFraction(-1.0 / 3.0);
-            waitForSpindexerIdle();
-            robot.Tongue.setUp();
-            waitWithUpdates(FEED_SETTLE_MS);
-
-        }
-        robot.Tongue.setDown();
 
         robot.outake.intakeOff();
         robot.Tongue.setDown();
         robot.turret.setAim(false);
-
     }
 
-    private void waitForSpindexerIdle() {
+    /* ===================== BALL PICKUP ===================== */
+    private void collectAtPose(Vector2d pickupPose) {
+        robot.intake.intakeOn();
+        robot.intake.setPower(1);
+
+        Actions.runBlocking(drive.actionBuilder(drive.localizer.getPose())
+                .strafeTo(pickupPose)
+                .build());
+
+        long start = System.currentTimeMillis();
+        while (opModeIsActive() && (System.currentTimeMillis() - start) < PICKUP_TIMEOUT_MS) {
+            robot.update(true,true);
+            if (robot.spindexer.recordBall()) {
+                if (robot.spindexer.isIdle()) {
+                    robot.spindexer.rotateByFraction(1.0 / 3.0);
+                }
+                sleep(30);
+                break;
+            }
+            sleep(10);
+        }
+
         while (opModeIsActive() && !robot.spindexer.isIdle()) {
-            robot.update(true, true);
+            robot.update(true,true);
             sleep(10);
         }
     }
 
-    private void alignSpindexerForDesiredColor(String pattern, int shotIndex) {
-        if (pattern == null || pattern.length() != 3) {
-            return;
-        }
-
-        int desiredIndex = Math.min(shotIndex, 2);
-
-        if (robot.spindexer.isIdle()) {
-                robot.spindexer.rotateByFraction(1.0 / 3.0);
-                char desiredColor = Character.toUpperCase(pattern.charAt(desiredIndex));
-                if (desiredColor != 'G' && desiredColor != 'P') {
-                    return;
-                }
-
-                int attempts = 0;
-                while (opModeIsActive() && attempts < 3) {
-                    boolean ballVisible = robot.spindexer.seesBall();
-                    boolean matchesDesired = (desiredColor == 'G' && ballVisible && robot.spindexer.seesGreen())
-                            || (desiredColor == 'P' && ballVisible && robot.spindexer.seesPurple());
-
-                    if (matchesDesired) {
-                        return;
-                    }
-
-                    if (!robot.spindexer.isIdle()) {
-
-                        continue;
-                    }
-
-                    robot.spindexer.rotateByFraction(1.0 / 3.0);
-                    waitForSpindexerIdle();
-                    sleep(40);
-                    attempts++;
-                }
-
-        }
-    }
-
-    private void positionSpindexerForPattern(String pattern, int shotIndex) {
-        if (pattern == null || pattern.length() != 3) {
-            return;
-        }
-
-        int desiredIndex = Math.min(shotIndex, 2);
-        Spindexer.BallColor desiredColor = pattern.charAt(desiredIndex) == 'G'
-                ? Spindexer.BallColor.GREEN
-                : Spindexer.BallColor.PURPLE;
-
-        for (int i = 0; i < 3 && opModeIsActive(); i++) {
-            Spindexer.BallColor visibleColor = robot.spindexer.getVisibleBallColor();
-
-            if (visibleColor == desiredColor || visibleColor == null) {
-                return;
-            }
-
-            if (!robot.spindexer.isIdle()) {
-                waitForSpindexerIdle();
-            }
-}
-        }
-
+    /* ===================== PATTERN DETECTION ===================== */
     private String detectPattern(String fallback) {
         LLResult result = limelight.getLatestResult();
-        if (result == null || !result.isValid()) {
-            return fallback;
-        }
+        if (result == null || !result.isValid()) return fallback;
 
         List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
-        if (tags == null) {
-            return fallback;
-        }
+        if (tags == null) return fallback;
 
         String detected = fallback;
         for (LLResultTypes.FiducialResult tag : tags) {
-            if (tag.getFiducialId() == 21) {
-                detected = "GPP";
-            } else if (tag.getFiducialId() == 22) {
-                detected = "PGP";
-            } else if (tag.getFiducialId() == 23) {
-                detected = "PPG";
-            }
+            if (tag.getFiducialId() == 21) detected = "GPP";
+            else if (tag.getFiducialId() == 22) detected = "PGP";
+            else if (tag.getFiducialId() == 23) detected = "PPG";
         }
         return detected;
     }
 
-
+    /* ===================== SAFE STOP ===================== */
     private void safeStop() {
         robot.intake.intakeOff();
         robot.outake.intakeOff();
         robot.Tongue.setDown();
         limelight.stop();
-        robot.update(true, true);
+        robot.update(true,true);
     }
 }

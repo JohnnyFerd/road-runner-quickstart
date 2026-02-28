@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
+import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.acmerobotics.roadrunner.SleepAction;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
@@ -12,23 +12,22 @@ import org.firstinspires.ftc.teamcode.opmodes.AlanStuff.AutoBase;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.Outake;
 
-import java.util.List;
-
-@Autonomous(name = "Red Far", group = "Auto")
+@Autonomous(name = "Red Far Basic", group = "Auto")
 public class RedFar extends AutoBase {
 
-    private static final Pose2d START_POSE = new Pose2d(60,  10, Math.toRadians(0));
-    private static final Vector2d SCAN_POSE = new Vector2d(53,  13);
+    private static final Pose2d START_POSE = new Pose2d(60, 10, Math.toRadians(0));
+    private static final Vector2d SCAN_POSE = new Vector2d(53, 13);
 
     private static final long SHOT_SPINUP_MS = 1000;
     private static final long SHOT_SETTLE_MS = 500;
-    private static final long FEED_SETTLE_MS = 500;
+    private static final long FEED_SETTLE_MS = 2000;
 
     private MecanumDrive drive;
     private Limelight3A limelight;
 
     @Override
     public void runOpMode() {
+
         initialize();
         drive = new MecanumDrive(hardwareMap, START_POSE);
 
@@ -40,12 +39,8 @@ public class RedFar extends AutoBase {
         robot.outake.intakeOff();
         robot.intake.intakeOff();
 
-        String pattern = "PPG";
-
         while (!isStarted() && !isStopRequested()) {
-            pattern = detectPattern(pattern);
             telemetry.addLine("Ready for auto");
-            telemetry.addData("Detected pattern", pattern);
             telemetry.update();
         }
 
@@ -55,6 +50,7 @@ public class RedFar extends AutoBase {
             return;
         }
 
+        // ===== Move to shooting position =====
         Actions.runBlocking(
                 drive.actionBuilder(START_POSE)
                         .strafeTo(SCAN_POSE)
@@ -62,96 +58,82 @@ public class RedFar extends AutoBase {
                         .build()
         );
 
-        pattern = detectPattern(pattern);
-        doShotCycle(pattern, 3);
+        // ===== Spin up shooter =====
+        Actions.runBlocking(spinUp());
+        Actions.runBlocking(waitSeconds(SHOT_SPINUP_MS / 1000.0));
+
+        // ===== Shoot 3 balls =====
+        for (int i = 0; i < 3; i++) {
+            Actions.runBlocking(doOneShot());
+        }
 
         safeStop();
     }
 
-    private void doShotCycle(String pattern, int shots) {
-        if (shots <= 0) {
-            return;
-        }
-        robot.turret.setAim(true);
+    /* ===================== ATOMIC ACTIONS ===================== */
 
-        robot.outake.setPresetVelocity(Outake.FarShotVelo);
-        sleep(200);
-        robot.outake.intakeOn();
-        robot.Tongue.setDown();
+    private Action spinUp() {
+        return packet -> {
+            robot.update(true, true);
+            robot.turret.setAim(true);
+            robot.outake.setPresetVelocity(Outake.FarShotVelo);
+            robot.outake.intakeOn();
+            return true;
+        };
+    }
 
-        while ( robot.Tongue.isBusy()) {
-            robot.update(true,true);   // or whatever runs subsystem updates
-        }
-        for (int i = 0; i < shots && opModeIsActive(); i++) {
-
-            robot.Tongue.setDown();
-            waitWithUpdates(FEED_SETTLE_MS);
-
-            positionSpindexerForPattern(pattern, i);
-            robot.spindexer.rotateByFraction(-1.0 / 3.0);
-            waitForSpindexerIdle();
+    private Action raiseTongue() {
+        return packet -> {
             robot.Tongue.setUp();
-            waitWithUpdates(FEED_SETTLE_MS);
-
-        }
-
-
-        robot.outake.intakeOff();
-        robot.Tongue.setDown();
-        robot.turret.setAim(false);
-
+            return true;
+        };
     }
 
-    private void waitWithUpdates(long delayMs) {
-        long start = System.currentTimeMillis();
-        while (opModeIsActive() && (System.currentTimeMillis() - start) < delayMs) {
-            robot.update(true, true);
-            sleep(10);
-        }
+    private Action lowerTongue() {
+        return packet -> {
+            robot.Tongue.setDown();
+            return true;
+        };
     }
 
-    private void positionSpindexerForPattern(String pattern, int shotIndex) {
-        if (pattern == null || pattern.length() != 3) {
-            return;
-        }
-
-        int desiredIndex = Math.min(shotIndex, 2);
-        if (pattern.charAt(desiredIndex) == 'G' && robot.spindexer.isIdle()) {
+    private Action rotateSpindexer() {
+        return packet -> {
             robot.spindexer.rotateByFraction(1.0 / 3.0);
-            waitForSpindexerIdle();
-        }
+            return true;
+        };
     }
 
-    private String detectPattern(String fallback) {
-        LLResult result = limelight.getLatestResult();
-        if (result == null || !result.isValid()) {
-            return fallback;
-        }
-
-        List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
-        if (tags == null) {
-            return fallback;
-        }
-
-        String detected = fallback;
-        for (LLResultTypes.FiducialResult tag : tags) {
-            if (tag.getFiducialId() == 21) {
-                detected = "GPP";
-            } else if (tag.getFiducialId() == 22) {
-                detected = "PGP";
-            } else if (tag.getFiducialId() == 23) {
-                detected = "PPG";
-            }
-        }
-        return detected;
-    }
-
-    private void waitForSpindexerIdle() {
-        while (opModeIsActive() && !robot.spindexer.isIdle()) {
+    private Action waitForSpindexerIdle() {
+        return packet -> {
             robot.update(true, true);
-            sleep(10);
-        }
+            return robot.spindexer.isIdle();
+        };
     }
+
+    private Action waitSeconds(double seconds) {
+        final long start = System.currentTimeMillis();
+        return packet -> {
+            robot.update(true, true);
+            return System.currentTimeMillis() - start >= seconds * 1000;
+        };
+    }
+
+    /* ===================== COMPOSITE SHOT ===================== */
+
+    private Action doOneShot() {
+        return packet -> {
+            Actions.runBlocking(waitForSpindexerIdle());
+            Actions.runBlocking(raiseTongue());
+            Actions.runBlocking(waitSeconds(SHOT_SETTLE_MS / 1000.0));
+            Actions.runBlocking(lowerTongue());
+            Actions.runBlocking(waitSeconds(FEED_SETTLE_MS / 1000.0));
+            Actions.runBlocking(rotateSpindexer());
+            Actions.runBlocking(waitForSpindexerIdle());
+            return true;
+        };
+    }
+
+    /* ===================== SAFE STOP ===================== */
 
     private void safeStop() {
         robot.intake.intakeOff();
@@ -159,6 +141,5 @@ public class RedFar extends AutoBase {
         robot.Tongue.setDown();
         limelight.stop();
         robot.update(true, true);
-        waitWithUpdates(200);
     }
 }

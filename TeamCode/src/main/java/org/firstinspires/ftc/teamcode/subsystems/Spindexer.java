@@ -208,7 +208,7 @@ public class Spindexer extends Subsystem {
     }
 
     public boolean isIdle() {
-        return !(lastError<20);
+        return mode == Mode.IDLE;
     }
 
     /* ================= Color Detection ================= */
