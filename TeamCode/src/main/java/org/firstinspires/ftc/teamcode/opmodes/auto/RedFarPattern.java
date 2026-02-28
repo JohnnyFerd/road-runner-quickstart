@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
+import androidx.annotation.NonNull;
+
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
@@ -44,7 +48,7 @@ public class RedFarPattern extends AutoBase {
         String pattern = "PPG";
 
         while (!isStarted() && !isStopRequested()) {
-            pattern = detectPattern(pattern);
+
             telemetry.addLine("Ready for auto");
             telemetry.addData("Detected pattern", pattern);
             telemetry.update();
@@ -63,7 +67,7 @@ public class RedFarPattern extends AutoBase {
                         .build()
         );
         Actions.runBlocking(doShotCycle(pattern, 3));
-        Actions.runBlocking(doShotCycle(pattern, 3));
+
 
 
         Actions.runBlocking(
@@ -75,54 +79,93 @@ public class RedFarPattern extends AutoBase {
         safeStop();
     }
 
-    private void doShotCycle(String pattern, int shots) {
 
+    private Action doShotCycle(String pattern, int shots) {
 
-        robot.turret.setAim(true);
-        robot.outake.setPresetVelocity(Outake.FarShotVelo);
-        robot.outake.intakeOn();
+        return new Action() {
 
-
-        for (int i = 0; i < shots && opModeIsActive(); i++) {
-
-            // Determine desired color for this shot
-            char desiredChar = Character.toUpperCase(pattern.charAt(Math.min(i, 2)));
-            Spindexer.BallColor desiredColor =
-                    desiredChar == 'G'
-                            ? Spindexer.BallColor.GREEN
-                            : Spindexer.BallColor.PURPLE;
-
-            // Rotate up to 3 times to find correct color
+            int shotIndex = 0;
             int attempts = 0;
-            while (opModeIsActive() && attempts < 3) {
+            int state = 0; // 0=spinup, 1=find, 2=fireUp, 3=fireDown, 4=advance, 5=done
+            long stateStart = 0;
 
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                robot.update(true, true);
+                if (!opModeIsActive()) return true;
 
-                Spindexer.BallColor visible = robot.spindexer.getVisibleBallColor();
+                long now = System.currentTimeMillis();
 
-                if (visible == desiredColor) {
-                       robot.outake.intakeOn();
-
-                    // Fire
-                        robot.Tongue.setUp();
-                        sleep(200);
-                        robot.Tongue.setDown();
-                        sleep(200);
-
-                    // Advance to next chamber
-                         robot.spindexer.rotateByFraction(1.0 / 3.0);
-
-                    i++;
+                if (state == 0) {
+                    robot.turret.setAim(true);
+                    robot.outake.setPresetVelocity(Outake.FarShotVelo);
+                    stateStart = now;
+                    state = 1;
 
                 }
-                robot.spindexer.rotateByFraction(1.0 / 3.0);
-                attempts++;
+
+                else if (state == 1) {
+
+                    if (shotIndex >= shots) {
+                        state = 5;
+                    } else {
+
+                        char desiredChar =
+                                Character.toUpperCase(pattern.charAt(Math.min(shotIndex, 2)));
+
+                        Spindexer.BallColor desiredColor =
+                                desiredChar == 'G'
+                                        ? Spindexer.BallColor.GREEN
+                                        : Spindexer.BallColor.PURPLE;
+
+                        Spindexer.BallColor visible =
+                                robot.spindexer.getVisibleBallColor();
+
+                        if (visible == desiredColor) {
+                            robot.Tongue.setUp();
+                            stateStart = now;
+                            state = 2;
+                        } else {
+                            robot.spindexer.rotateByFraction(1.0 / 3.0);
+                            attempts++;
+                            if (attempts >= 3) {
+                                shotIndex++;
+                                attempts = 0;
+                            }
+                        }
+                    }
+                }
+
+                else if (state == 2) {
+                    if (now - stateStart > 200) {
+                        robot.Tongue.setDown();
+                        stateStart = now;
+                        state = 3;
+                    }
+                }
+
+                else if (state == 3) {
+                    if (now - stateStart > 200) {
+                        state = 4;
+                    }
+                }
+
+                else if (state == 4) {
+                    robot.spindexer.rotateByFraction(1.0 / 3.0);
+                    shotIndex++;
+                    attempts = 0;
+                    state = 1;
+                }
+
+                else if (state == 5) {
+                    robot.outake.intakeOff();
+                    robot.turret.setAim(false);
+                    return false;
+                }
+
+                return false;
             }
-
-
-        }
-
-        robot.outake.intakeOff();
-        robot.turret.setAim(false);
+        };
     }
 
 
