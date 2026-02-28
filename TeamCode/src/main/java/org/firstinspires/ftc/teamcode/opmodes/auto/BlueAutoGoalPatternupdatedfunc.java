@@ -17,15 +17,21 @@ import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 
 import java.util.List;
 
-@Autonomous(name = "Blue Far Pattern", group = "Auto")
-public class BlueFarPattern extends AutoBase {
+@Autonomous(name = "Blue Auto Goal Pattern", group = "Auto")
+public class BlueAutoGoalPatternupdatedfunc extends AutoBase {
 
-    private static final Pose2d START_POSE = new Pose2d(60, -10, Math.toRadians(0));
-    private static final Vector2d SCAN_POSE = new Vector2d(53, -13);
+    private static final Pose2d START_POSE = new Pose2d(-52, -49, Math.toRadians(52.5));
+    private static final Vector2d SCAN_AND_SHOOT_POSE = new Vector2d(-12, -15);
+    private static final Vector2d PICKUP_1 = new Vector2d(-12, -37);
+    private static final Vector2d PICKUP_2 = new Vector2d(-12, -43);
+    private static final Vector2d PICKUP_3 = new Vector2d(-12, -52.5);
 
     private static final long SHOT_SPINUP_MS = 2000;
     private static final long SHOT_SETTLE_MS = 50;
     private static final long FEED_SETTLE_MS = 50;
+    private static final long PICKUP_SETTLE_MS = 50;
+    private static final long PICKUP_TIMEOUT_MS = 1400;
+    private static final double HOLD_INTAKE_POWER = -0.4;
 
     private MecanumDrive drive;
     private Limelight3A limelight;
@@ -58,11 +64,10 @@ public class BlueFarPattern extends AutoBase {
             return;
         }
 
-        // ===== Move to scan pose while scanning pattern =====
+        // ===== Move to scan/shoot pose while continuously scanning =====
         Actions.runBlocking(new ParallelAction(
                 drive.actionBuilder(START_POSE)
-                        .strafeTo(SCAN_POSE)
-                        .turn(Math.toRadians(360+17.5))
+                        .strafeTo(SCAN_AND_SHOOT_POSE)
                         .build(),
                 continuousPatternScan()
         ));
@@ -70,7 +75,23 @@ public class BlueFarPattern extends AutoBase {
         // ===== Shoot first 3 balls =====
         doShotCycle(pattern, 3);
 
+        // ===== Turn for intake path =====
+        Actions.runBlocking(
+                drive.actionBuilder(drive.localizer.getPose())
+                        .turn(Math.toRadians(37.5)) // mirror of red side turn
+                        .build()
+        );
+
+        // ===== Pick up balls =====
+        collectBallAt(PICKUP_1);
+        collectBallAt(PICKUP_2);
+        collectBallAt(PICKUP_3);
+
+        // ===== Shoot collected balls =====
+        doShotCycle(pattern, 3);
+
         safeStop();
     }
+
 
 }
