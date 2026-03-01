@@ -26,6 +26,7 @@ public class Spindexer extends Subsystem {
 
     public static double POWER = 0.5;
     public static double TICKS_PER_REV = 8192;
+    public static int HOME_TICKS = 0;
     private boolean ballCurrentlyDetected = false;
 
     public static double kP =  0.0008;
@@ -150,6 +151,11 @@ public class Spindexer extends Subsystem {
     }
     public int getBallCount() {
         return ballCount;
+    }
+    public void rehome() {
+
+        targetTicks = HOME_TICKS;
+        mode = Mode.MOVING;
     }
     private void shiftLeft() {
         for (int i = 0; i < ballCount - 1; i++) {
