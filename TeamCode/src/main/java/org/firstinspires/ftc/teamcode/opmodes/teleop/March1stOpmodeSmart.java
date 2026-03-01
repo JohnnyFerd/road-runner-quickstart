@@ -27,7 +27,7 @@ public class March1stOpmodeSmart extends LinearOpMode {
     Turret turret;
     Spindexer spindexer;
     JVBoysSoccerRobot robot;
-    Tongue Tongue;
+    Tongue tongue;
 
     /* ---------------- VISION ---------------- */
     Limelight3A limelight;
@@ -43,7 +43,6 @@ public class March1stOpmodeSmart extends LinearOpMode {
     /* ---------------- STATE ---------------- */
     boolean intakeOn = false;
     boolean tongueUp = false;
-
     boolean shooterOn = false;
     boolean highRPM = false;
 
@@ -62,7 +61,7 @@ public class March1stOpmodeSmart extends LinearOpMode {
         intake = robot.intake;
         turret = robot.turret;
         spindexer = robot.spindexer;
-        Tongue = robot.Tongue;
+        tongue = robot.Tongue;
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
@@ -95,8 +94,7 @@ public class March1stOpmodeSmart extends LinearOpMode {
        ============================================================ */
     private void handleDrive() {
         double speedScale = 1.0;
-        boolean slower = curr1.left_trigger > .2;
-        if(slower) speedScale = .3;
+        if(curr1.left_trigger > .2) speedScale = .3;
 
         drivetrain.moveXYR(
                 curr1.left_stick_x * 1.05 * speedScale,
@@ -107,12 +105,10 @@ public class March1stOpmodeSmart extends LinearOpMode {
 
     private void handleIntake() {
 
-        // Toggle forward state
         if(curr1.right_bumper && !prev1.right_bumper){
             intakeOn = !intakeOn;
         }
 
-        // Apply power every loop
         if(curr1.left_bumper){
             intake.intakeReverse();
         } else if(intakeOn){
@@ -124,9 +120,8 @@ public class March1stOpmodeSmart extends LinearOpMode {
         // Tongue toggle, only if spindexer is idle
         if(curr1.b && !prev1.b && spindexer.isIdle()){
             tongueUp = !tongueUp;
-
-            if(tongueUp) Tongue.setUp();
-            else Tongue.setDown();
+            if(tongueUp) tongue.setUp();
+            else tongue.setDown();
         }
 
         // Shooter toggle
@@ -156,18 +151,18 @@ public class March1stOpmodeSmart extends LinearOpMode {
             robot.outake.intakeOff();
         }
 
-        // Rehome spindexer, only if tongue is down
-        if(curr1.right_stick_button && !prev1.right_stick_button && !tongueUp){
+        // Rehome spindexer, only if tongue is down and not moving
+        if(curr1.right_stick_button && !prev1.right_stick_button && tongue.isDown()){
             spindexer.rehome();
         }
     }
 
     private void handleSpindexer() {
         // Only move if tongue is down and spindexer is idle
-        if(curr1.dpad_right && !prev1.dpad_right && spindexer.isIdle() && !tongueUp){
+        if(curr1.dpad_right && !prev1.dpad_right && tongue.isDown()){
             spindexer.rotateByFraction(1.0/3.0);
         }
-        if(curr1.dpad_left && !prev1.dpad_left && spindexer.isIdle() && !tongueUp){
+        if(curr1.dpad_left && !prev1.dpad_left && tongue.isDown()){
             spindexer.rotateByFraction(-1.0/3.0);
         }
     }
@@ -230,6 +225,7 @@ public class March1stOpmodeSmart extends LinearOpMode {
         telemetry.addData("Shooter On", shooterOn);
         telemetry.addData("RPM Mode", highRPM ? "HIGH (3800)" : "LOW (2500)");
         telemetry.addData("Tongue Up", tongueUp);
+        telemetry.addData("Tongue Moving", tongue.isBusy());
         telemetry.addData("Spindexer Moving", !spindexer.isIdle());
         telemetry.update();
     }
