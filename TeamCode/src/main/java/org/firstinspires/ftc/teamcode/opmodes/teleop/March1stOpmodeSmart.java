@@ -17,11 +17,10 @@ import org.firstinspires.ftc.teamcode.subsystems.*;
 import java.util.List;
 
 @Config
-@TeleOp(name="Comp Opmode", group="TeleOp")
-public class March1stOpmode extends LinearOpMode {
+@TeleOp(name="Comp Opmode Smart", group="TeleOp")
+public class March1stOpmodeSmart extends LinearOpMode {
 
     /* ---------------- SUBSYSTEMS ---------------- */
-
     Drivetrain drivetrain;
     MecanumDrive rrDrive;
     Intake intake;
@@ -31,20 +30,17 @@ public class March1stOpmode extends LinearOpMode {
     Tongue Tongue;
 
     /* ---------------- VISION ---------------- */
-
     Limelight3A limelight;
     String goalLabel = "";
     String patternLabel = "";
 
     /* ---------------- GAMEPAD TRACKING ---------------- */
-
     Gamepad curr1 = new Gamepad();
     Gamepad prev1 = new Gamepad();
     Gamepad curr2 = new Gamepad();
     Gamepad prev2 = new Gamepad();
 
     /* ---------------- STATE ---------------- */
-
     boolean intakeOn = false;
     boolean tongueUp = false;
 
@@ -55,7 +51,6 @@ public class March1stOpmode extends LinearOpMode {
     public static int HIGH_RPM = 3800;
 
     /* ============================================================ */
-
     @Override
     public void runOpMode() {
 
@@ -81,10 +76,7 @@ public class March1stOpmode extends LinearOpMode {
         waitForStart();
 
         while(opModeIsActive()) {
-
             updateGamepads();
-
-
 
             handleDrive();
             handleIntake();
@@ -101,15 +93,10 @@ public class March1stOpmode extends LinearOpMode {
     /* ============================================================
                            CONTROLS
        ============================================================ */
-
     private void handleDrive() {
-
         double speedScale = 1.0;
-
-
         boolean slower = curr1.left_trigger > .2;
-
-        if( slower) {speedScale = .3;}
+        if(slower) speedScale = .3;
 
         drivetrain.moveXYR(
                 curr1.left_stick_x * 1.05 * speedScale,
@@ -128,24 +115,23 @@ public class March1stOpmode extends LinearOpMode {
         // Apply power every loop
         if(curr1.left_bumper){
             intake.intakeReverse();
-        }
-        else if(intakeOn){
+        } else if(intakeOn){
             intake.intakeOn();
-        }
-        else{
+        } else {
             intake.intakeOff();
         }
 
-        if(curr1.b && !prev1.b){
+        // Tongue toggle, only if spindexer is idle
+        if(curr1.b && !prev1.b && spindexer.isIdle()){
             tongueUp = !tongueUp;
 
             if(tongueUp) Tongue.setUp();
             else Tongue.setDown();
         }
+
         // Shooter toggle
         if(curr1.dpad_up && !prev1.dpad_up){
             shooterOn = !shooterOn;
-
             if(shooterOn){
                 int target = highRPM ? HIGH_RPM : LOW_RPM;
                 robot.outake.setPresetVelocity(target);
@@ -155,51 +141,44 @@ public class March1stOpmode extends LinearOpMode {
             }
         }
 
-// Toggle RPM mode
+        // Toggle RPM mode
         if(curr1.y && !prev1.y){
             highRPM = !highRPM;
-
-            // If shooter is already running, update velocity immediately
             if(shooterOn){
                 int target = highRPM ? HIGH_RPM : LOW_RPM;
                 robot.outake.setPresetVelocity(target);
             }
         }
 
-// Emergency stop
+        // Emergency stop
         if(curr1.dpad_down && !prev1.dpad_down){
             shooterOn = false;
             robot.outake.intakeOff();
         }
 
-        if(curr1.right_stick_button && !prev1.right_stick_button){
+        // Rehome spindexer, only if tongue is down
+        if(curr1.right_stick_button && !prev1.right_stick_button && !tongueUp){
             spindexer.rehome();
         }
-
-
-
     }
 
     private void handleSpindexer() {
-
-        if(curr1.dpad_right && !prev1.dpad_right && spindexer.isIdle()){
+        // Only move if tongue is down and spindexer is idle
+        if(curr1.dpad_right && !prev1.dpad_right && spindexer.isIdle() && !tongueUp){
             spindexer.rotateByFraction(1.0/3.0);
         }
-        if(curr1.dpad_left && !prev1.dpad_left && spindexer.isIdle()){
+        if(curr1.dpad_left && !prev1.dpad_left && spindexer.isIdle() && !tongueUp){
             spindexer.rotateByFraction(-1.0/3.0);
         }
-
     }
 
     /* ============================================================
                            POSE + RPM
        ============================================================ */
-
     double distance = 0;
     double CalcRPMs = 0;
 
     private void updatePose(){
-
         rrDrive.updatePoseEstimate();
         Pose2d pose = rrDrive.localizer.getPose();
 
@@ -207,24 +186,19 @@ public class March1stOpmode extends LinearOpMode {
         distance = Math.max(0, Math.min(distance, 200));
 
         CalcRPMs = 2500 + 20 * distance;
-        //Outake.FarShotVelo = ((int) CalcRPMs);
     }
 
     /* ============================================================
                            LIMELIGHT
        ============================================================ */
-
     private void updateVision(){
-
         LLResult result = limelight.getLatestResult();
 
         if(result != null && result.isValid()){
-
             List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
 
             if(tags != null && !tags.isEmpty()){
                 for(LLResultTypes.FiducialResult tag : tags){
-
                     switch(tag.getFiducialId()){
                         case 20: goalLabel="Blue"; break;
                         case 24: goalLabel="Red"; break;
@@ -240,7 +214,6 @@ public class March1stOpmode extends LinearOpMode {
     /* ============================================================
                            UTIL
        ============================================================ */
-
     private void updateGamepads(){
         prev1.copy(curr1);
         prev2.copy(curr2);
@@ -249,7 +222,6 @@ public class March1stOpmode extends LinearOpMode {
     }
 
     private void sendTelemetry(){
-
         telemetry.addData("Goal",goalLabel);
         telemetry.addData("Pattern",patternLabel);
         telemetry.addData("Distance",distance);
@@ -257,7 +229,8 @@ public class March1stOpmode extends LinearOpMode {
         telemetry.addData("Heading",robot.getHeadingDeg());
         telemetry.addData("Shooter On", shooterOn);
         telemetry.addData("RPM Mode", highRPM ? "HIGH (3800)" : "LOW (2500)");
-
+        telemetry.addData("Tongue Up", tongueUp);
+        telemetry.addData("Spindexer Moving", !spindexer.isIdle());
         telemetry.update();
     }
 }
