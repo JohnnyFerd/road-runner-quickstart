@@ -118,7 +118,7 @@ public class March1stOpmodeSmart extends LinearOpMode {
         }
 
         // Tongue toggle, only if spindexer is idle
-        if(curr1.b && !prev1.b && spindexer.isIdle()){
+        if(curr1.b && !prev1.b ){
             tongueUp = !tongueUp;
             if(tongueUp) tongue.setUp();
             else tongue.setDown();
